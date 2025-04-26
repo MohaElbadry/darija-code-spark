@@ -8,7 +8,7 @@ import { Sheet, SheetContent, SheetTrigger } from "./ui/sheet";
 import { Menu, BookOpen, LogOut, Settings, User, HelpCircle, BarChart, Globe, Bot, Sun, Moon, Info, CoffeeIcon, ProjectorIcon, GroupIcon, Home } from 'lucide-react';
 import { ModeToggle } from './ui/mode-toggle';
 import logo from '../assets/logo.png';
-import {
+import { 
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -113,7 +113,7 @@ const Navbar: React.FC = () => {
     { code: 'french' as const, label: 'Français', flag: '🇫🇷' },
     { code: 'darija' as const, label: 'الدارجة', flag: '🇲🇦' }
   ];
-
+  
   useEffect(() => {
     const fetchUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -222,14 +222,14 @@ const Navbar: React.FC = () => {
             </Button>
 
             {/* Language Selector */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="sm" className="flex items-center gap-1.5">
                   <Globe className="h-4 w-4" />
                   <span>{getLanguageLabel(language)}</span>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
                 {languages.map((lang) => (
                   <DropdownMenuItem 
                     key={lang.code}
@@ -238,12 +238,12 @@ const Navbar: React.FC = () => {
                   >
                     <span className="mr-2">{lang.flag}</span>
                     {lang.label}
-                  </DropdownMenuItem>
+              </DropdownMenuItem>
                 ))}
-              </DropdownMenuContent>
-            </DropdownMenu>
-            
-            {user ? (
+            </DropdownMenuContent>
+          </DropdownMenu>
+          
+          {user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="relative h-8 w-8 rounded-full">
@@ -396,8 +396,8 @@ const Navbar: React.FC = () => {
                     <Button onClick={() => { navigate('/auth'); setIsOpen(false); }} size="sm">
                       <User className="h-4 w-4 mr-2" />
                       {t('signIn')}
-                    </Button>
-                  )}
+            </Button>
+          )}
                 </div>
               </SheetContent>
             </Sheet>

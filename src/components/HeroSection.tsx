@@ -32,22 +32,22 @@ const HeroSection: React.FC = () => {
     <section className="py-16 text-center">
       <div className="container mx-auto px-4">
         <h1 
-          className={`text-4xl font-bold mb-4 ${isRtl ? 'rtl' : 'ltr'}`}
+          className={`text-4xl font-bold mb-4 text-gray-900 dark:text-white ${isRtl ? 'rtl' : 'ltr'}`}
           style={{ fontFamily: isRtl ? 'Arial, sans-serif' : 'inherit' }}
         >
           {t('hero.title')}
         </h1>
-        <p className="text-xl text-gray-600 mb-8">{t('hero.subtitle')}</p>
+        <p className="text-xl text-gray-600 dark:text-gray-300 mb-8">{t('hero.subtitle')}</p>
         
         <div className="mx-auto max-w-xl mb-10">
           <div className="relative">
             <Input
               type="text"
               placeholder={t('hero.search')}
-              className="w-full rounded-full pl-4 pr-10 py-3 border border-gray-300 focus:border-darija-secondary"
+              className="w-full rounded-full pl-4 pr-10 py-3 border border-gray-300 dark:border-gray-700 focus:border-darija-secondary dark:bg-gray-800 dark:text-white"
             />
             <button className="absolute right-3 top-1/2 transform -translate-y-1/2">
-              <Mic className="h-5 w-5 text-gray-500" />
+              <Mic className="h-5 w-5 text-gray-500 dark:text-gray-400" />
             </button>
           </div>
         </div>

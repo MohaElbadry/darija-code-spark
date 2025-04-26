@@ -216,7 +216,7 @@ const LearningSetupContent: React.FC = () => {
   // Return Loading State
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center">
         <div className="container mx-auto py-10 px-4 text-center">
           <div className="bg-white dark:bg-gray-800 rounded-lg p-8 shadow-lg max-w-md mx-auto">
             <div className="flex items-center justify-center gap-4">
@@ -234,7 +234,7 @@ const LearningSetupContent: React.FC = () => {
 
   // Return Main Content
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center">
       <div className="w-full max-w-2xl mx-auto px-4 py-10">
         {error && (
           <div className="bg-red-50 dark:bg-red-900/20 border-l-4 border-red-500 text-red-700 dark:text-red-200 p-4 rounded-lg mb-6 shadow-sm max-w-2xl mx-auto">
@@ -278,7 +278,7 @@ const LearningSetupContent: React.FC = () => {
                   </SelectContent>
                 </Select>
                 {selectedPath && (
-                  <div className="mt-2 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                  <div className="mt-2 p-3 bg-blue-50 dark:bg-blue-900/10 rounded-lg">
                     <p className="text-sm text-blue-700 dark:text-blue-300">{selectedPath.description}</p>
                   </div>
                 )}
@@ -302,7 +302,7 @@ const LearningSetupContent: React.FC = () => {
                   </SelectContent>
                 </Select>
                 {level && (
-                  <div className="mt-2 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                  <div className="mt-2 p-3 bg-blue-50 dark:bg-blue-900/10 rounded-lg">
                     <p className="text-sm text-blue-700 dark:text-blue-300">{levelDescriptions[level as keyof typeof levelDescriptions].description}</p>
                   </div>
                 )}
@@ -326,7 +326,7 @@ const LearningSetupContent: React.FC = () => {
                   </SelectContent>
                 </Select>
                 {language && (
-                  <div className="mt-2 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                  <div className="mt-2 p-3 bg-blue-50 dark:bg-blue-900/10 rounded-lg">
                     <p className="text-sm text-blue-700 dark:text-blue-300">{languageDescriptions[language as keyof typeof languageDescriptions].description}</p>
                   </div>
                 )}
@@ -361,7 +361,7 @@ const LearningSetupContent: React.FC = () => {
                                 setGoal(suggestion);
                                 setShowSuggestions(false);
                               }}
-                              className="text-sm px-3 py-1 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 rounded-full hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors"
+                              className="text-sm px-3 py-1 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 rounded-full hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors"
                             >
                               {suggestion}
                             </button>

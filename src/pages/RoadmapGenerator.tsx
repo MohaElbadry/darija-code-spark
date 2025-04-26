@@ -363,7 +363,7 @@ const RoadmapGeneratorContent: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center">
         <div className="container mx-auto py-10 px-4 text-center">
           <div className="bg-white dark:bg-gray-800 rounded-lg p-8 shadow-lg max-w-md mx-auto">
             <div className="flex items-center justify-center gap-4">
@@ -380,11 +380,11 @@ const RoadmapGeneratorContent: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
       <div className="container mx-auto py-10 px-4">
         <Button 
           variant="ghost" 
-          className="mb-6 flex items-center gap-2"
+          className="mb-6 flex items-center gap-2 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
           onClick={() => navigate('/learning-setup')}
           disabled={loading || generating}
         >
@@ -437,6 +437,7 @@ const RoadmapGeneratorContent: React.FC = () => {
                 value={stripMarkdown(roadmapTitle)}
                 onChange={(e) => setRoadmapTitle(e.target.value)}
                 placeholder={t('roadmap.title_placeholder')}
+                className="bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600"
               />
             </div>
 
@@ -446,7 +447,7 @@ const RoadmapGeneratorContent: React.FC = () => {
                 value={stripMarkdown(roadmapDescription)}
                 onChange={(e) => setRoadmapDescription(e.target.value)}
                 placeholder={t('roadmap.description_placeholder')}
-                className="h-24"
+                className="h-24 bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600"
               />
             </div>
 
@@ -456,25 +457,25 @@ const RoadmapGeneratorContent: React.FC = () => {
                 value={customPrompt}
                 onChange={(e) => setCustomPrompt(e.target.value)}
                 placeholder="Add any specific requirements or preferences for your roadmap..."
-                className="min-h-[120px] rounded-lg border-gray-200 dark:border-gray-700 focus:ring-2 focus:ring-blue-400 text-base bg-white dark:bg-gray-700"
+                className="min-h-[120px] rounded-lg border-gray-200 dark:border-gray-700 focus:ring-2 focus:ring-blue-400 text-base bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                 disabled={loading || generating}
               />
             </div>
 
             <div className="space-y-6">
               {steps.map((step, index) => (
-                <Card key={index} className="border-l-4 border-blue-500">
+                <Card key={index} className="border-l-4 border-blue-500 dark:border-blue-600">
                   <CardHeader className="pb-2">
                     <div className="flex items-center justify-between">
                       <CardTitle className="flex items-center gap-2">
-                        <span className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-100 text-blue-800 text-sm font-medium">
+                        <span className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-300 text-sm font-medium">
                           {index + 1}
                         </span>
-                        <h3 className="font-medium text-gray-800 dark:text-white">
+                        <span className="font-medium text-gray-800 dark:text-white">
                           {stripMarkdown(step.title)}
-                        </h3>
+                        </span>
                       </CardTitle>
-                      <Badge variant="outline" className="bg-blue-50 text-blue-800">
+                      <Badge variant="outline" className="bg-blue-50 dark:bg-blue-900/20 text-blue-800 dark:text-blue-300">
                         {step.estimated_time}
                       </Badge>
                     </div>
@@ -486,7 +487,7 @@ const RoadmapGeneratorContent: React.FC = () => {
                     {step.keywords && step.keywords.length > 0 && (
                       <div className="flex flex-wrap gap-2 mt-4">
                         {step.keywords.map((keyword, i) => (
-                          <Badge key={i} variant="secondary" className="bg-gray-100 dark:bg-gray-700">
+                          <Badge key={i} variant="secondary" className="bg-gray-100 dark:bg-gray-700 dark:text-gray-300">
                             {keyword.replace(/[*_`]/g, '').trim()}
                           </Badge>
                         ))}
@@ -501,7 +502,7 @@ const RoadmapGeneratorContent: React.FC = () => {
           <CardFooter className="px-8 pb-8 pt-0">
             <div className="flex gap-4 w-full">
               <Button
-                onClick={generateRoadmap}
+                onClick={() => generateRoadmap()}
                 disabled={loading || generating}
                 className="flex-1 h-12 bg-gradient-to-r from-blue-500 to-indigo-500 text-white font-semibold text-base rounded-lg shadow hover:from-blue-600 hover:to-indigo-600 transition transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
@@ -545,7 +546,7 @@ const RoadmapGeneratorContent: React.FC = () => {
 
 const RoadmapGenerator: React.FC = () => {
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <RoadmapGeneratorContent />
     </div>
   );

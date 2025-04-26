@@ -140,11 +140,11 @@ const CodeEditor: React.FC = () => {
           <div className="bg-gray-50 dark:bg-gray-800 px-4 py-3 border-b border-gray-200 dark:border-gray-700">
             <h3 className="font-semibold text-gray-800 dark:text-gray-100">Live Preview</h3>
           </div>
-          <div className="bg-white p-4 h-64 overflow-auto">
+          <div className="bg-white dark:bg-gray-800 p-4 h-64 overflow-auto">
             <iframe
               srcDoc={previewHtml}
               title="Preview"
-              className="w-full h-full border-0"
+              className="w-full h-full border-0 bg-white dark:bg-gray-800"
               sandbox="allow-scripts"
             />
           </div>
