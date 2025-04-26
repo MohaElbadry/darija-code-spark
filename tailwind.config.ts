@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -61,6 +62,13 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
+				},
+				darija: {
+					primary: '#e32845',
+					secondary: '#3982f6',
+					tertiary: '#f59e0b',
+					light: '#f8fafc',
+					dark: '#1e293b'
 				}
 			},
 			borderRadius: {

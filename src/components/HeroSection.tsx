@@ -1,0 +1,55 @@
+
+import React from 'react';
+import { useLanguage } from '../contexts/LanguageContext';
+import { Button } from './ui/button';
+import { Input } from './ui/input';
+import { Mic, GraduationCap, Users, Sparkles } from 'lucide-react';
+
+const HeroSection: React.FC = () => {
+  const { t, language } = useLanguage();
+  const isRtl = language === 'ar' || language === 'darija';
+  
+  return (
+    <section className="py-16 text-center">
+      <div className="container mx-auto px-4">
+        <h1 
+          className={`text-4xl font-bold mb-4 ${isRtl ? 'rtl' : 'ltr'}`}
+          style={{ fontFamily: isRtl ? 'Arial, sans-serif' : 'inherit' }}
+        >
+          {t('hero.title')}
+        </h1>
+        <p className="text-xl text-gray-600 mb-8">{t('hero.subtitle')}</p>
+        
+        <div className="mx-auto max-w-xl mb-10">
+          <div className="relative">
+            <Input
+              type="text"
+              placeholder={t('hero.search')}
+              className="w-full rounded-full pl-4 pr-10 py-3 border border-gray-300 focus:border-darija-secondary"
+            />
+            <button className="absolute right-3 top-1/2 transform -translate-y-1/2">
+              <Mic className="h-5 w-5 text-gray-500" />
+            </button>
+          </div>
+        </div>
+        
+        <div className="flex flex-col sm:flex-row justify-center gap-4">
+          <Button className="bg-darija-primary hover:bg-red-700 rounded-full px-8 py-2 flex items-center gap-2">
+            <GraduationCap className="h-5 w-5" />
+            {t('cta.start')}
+          </Button>
+          <Button className="bg-darija-secondary hover:bg-blue-700 rounded-full px-8 py-2 flex items-center gap-2">
+            <Users className="h-5 w-5" />
+            {t('cta.join')}
+          </Button>
+          <Button className="bg-darija-tertiary hover:bg-amber-600 rounded-full px-8 py-2 flex items-center gap-2">
+            <Sparkles className="h-5 w-5" />
+            {t('cta.try')}
+          </Button>
+        </div>
+      </div>
+    </section>
+  );
+};
+
+export default HeroSection;
