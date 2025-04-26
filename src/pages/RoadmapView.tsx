@@ -284,7 +284,6 @@ const RoadmapViewContent: React.FC = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <Navbar />
         <div className="container mx-auto py-10 px-4 text-center">
           <LucideLoader2 className="h-10 w-10 animate-spin mx-auto" />
           <p className="mt-4">Loading your roadmap...</p>
@@ -296,7 +295,6 @@ const RoadmapViewContent: React.FC = () => {
   if (!roadmap) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <Navbar />
         <div className="container mx-auto py-10 px-4 text-center">
           <h1 className="text-2xl font-bold mb-4">Roadmap Not Found</h1>
           <Button onClick={() => navigate('/')}>Return Home</Button>
@@ -307,7 +305,6 @@ const RoadmapViewContent: React.FC = () => {
   
   return (
     <div className="min-h-screen bg-gray-50">
-      <Navbar />
       <div className="container mx-auto py-10 px-4">
         <Button 
           variant="ghost" 
@@ -461,11 +458,7 @@ const RoadmapViewContent: React.FC = () => {
 };
 
 const RoadmapView: React.FC = () => {
-  return (
-    <LanguageProvider>
-      <RoadmapViewContent />
-    </LanguageProvider>
-  );
+  return <RoadmapViewContent />;
 };
 
 export default RoadmapView; 

@@ -8,11 +8,24 @@ import { Mic, GraduationCap, Users, Sparkles } from 'lucide-react';
 const HeroSection: React.FC = () => {
   const { t, language } = useLanguage();
   const navigate = useNavigate();
-  const isRtl = language === 'ar' || language === 'darija';
+  const isRtl = language === 'arabic' || language === 'darija';
+  
+  console.log('Current language:', language);
+  console.log('Translation result:', t('hero.title'));
   
   const handleStartLearning = () => {
     console.log('Navigating to learning setup');
     navigate('/learning-setup');
+  };
+
+  const handleJoinCommunity = () => {
+    console.log('Navigating to community');
+    navigate('/community');
+  };
+
+  const handleTryAI = () => {
+    console.log('Navigating to AI assistant');
+    navigate('/assistant');
   };
   
   return (
@@ -47,11 +60,17 @@ const HeroSection: React.FC = () => {
             <GraduationCap className="h-5 w-5" />
             {t('cta.start')}
           </Button>
-          <Button className="bg-darija-secondary hover:bg-blue-700 rounded-full px-8 py-2 flex items-center gap-2">
+          <Button 
+            className="bg-darija-secondary hover:bg-blue-700 rounded-full px-8 py-2 flex items-center gap-2"
+            onClick={handleJoinCommunity}
+          >
             <Users className="h-5 w-5" />
             {t('cta.join')}
           </Button>
-          <Button className="bg-darija-tertiary hover:bg-amber-600 rounded-full px-8 py-2 flex items-center gap-2">
+          <Button 
+            className="bg-darija-tertiary hover:bg-amber-600 rounded-full px-8 py-2 flex items-center gap-2"
+            onClick={handleTryAI}
+          >
             <Sparkles className="h-5 w-5" />
             {t('cta.try')}
           </Button>
