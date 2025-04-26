@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import { Search, Filter, Code, ArrowRight, Star, BookmarkPlus, BookmarkCheck, Plus } from "lucide-react";
 import mermaid from "mermaid";
 
-
 interface ProjectIdea {
   id: string;
   title: string;
@@ -112,6 +111,47 @@ const Projects = () => {
     }));
   };
 
+  // Function to format markdown content with proper styling
+  const formatMarkdownContent = (content: string) => {
+    return content
+      // Headers with proper spacing and styling
+      .replace(/^# (.*$)/gim, '<h1 class="text-2xl font-bold mb-4 mt-6 text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-700 pb-2">$1</h1>')
+      .replace(/^## (.*$)/gim, '<h2 class="text-xl font-bold mb-3 mt-5 text-gray-900 dark:text-white">$1</h2>')
+      .replace(/^### (.*$)/gim, '<h3 class="text-lg font-bold mb-2 mt-4 text-gray-800 dark:text-gray-100">$1</h3>')
+      // Emphasis and strong
+      .replace(/\*\*(.*?)\*\*/gim, '<strong>$1</strong>')
+      .replace(/\*(.*?)\*/gim, '<em>$1</em>')
+      // Lists
+      .replace(/^\s*[\-\*] (.*$)/gim, '<li class="ml-4 mb-1">$1</li>')
+      .replace(/(<\/li>\s*<li)/gim, '$1')
+      .replace(/(<li.*<\/li>)/gims, '<ul class="list-disc space-y-1 mb-4">$1</ul>')
+      // Numbered lists
+      .replace(/^\s*(\d+)\. (.*$)/gim, '<li class="ml-4 mb-1">$2</li>')
+      .replace(/(<li.*<\/li>)/gims, (match) => {
+        if (match.includes('list-disc')) return match;
+        return '<ol class="list-decimal space-y-1 mb-4">' + match + '</ol>';
+      })
+      // Code blocks with syntax highlighting
+      .replace(/```mermaid([\s\S]*?)```/gim, '<pre class="mermaid mt-4 mb-6">$1</pre>')
+      .replace(/```([a-z]*)\n([\s\S]*?)```/gim, '<div class="bg-gray-100 dark:bg-gray-900 rounded-md overflow-hidden mb-4"><div class="bg-gray-200 dark:bg-gray-800 px-4 py-1 text-xs font-mono text-gray-600 dark:text-gray-400">$1</div><pre class="p-4 overflow-x-auto text-sm"><code>$2</code></pre></div>')
+      // Generic code blocks
+      .replace(/```([\s\S]*?)```/gim, '<pre class="bg-gray-100 dark:bg-gray-900 p-4 rounded-md overflow-x-auto mb-4 text-sm"><code>$1</code></pre>')
+      // Inline code
+      .replace(/`(.*?)`/gim, '<code class="bg-gray-100 dark:bg-gray-900 px-1 py-0.5 rounded text-sm font-mono">$1</code>')
+      // Blockquotes
+      .replace(/^\> (.*$)/gim, '<blockquote class="border-l-4 border-gray-300 dark:border-gray-600 pl-4 italic text-gray-600 dark:text-gray-400 mb-4">$1</blockquote>')
+      // Paragraphs
+      .replace(/^(?!<[\/a-zA-Z])(.*$)/gim, (match) => {
+        if (match.trim() === '') return '';
+        return '<p class="mb-4 text-gray-700 dark:text-gray-300">' + match + '</p>';
+      })
+      // Tables (basic support)
+      .replace(/\|\s*(.*)\s*\|/gim, '<table class="min-w-full divide-y divide-gray-300 dark:divide-gray-700 mb-4"><tr>$1</tr></table>')
+      .replace(/\|(.*?)\|/gim, '<td class="px-3 py-2 border border-gray-300 dark:border-gray-700">$1</td>')
+      // Horizontal Rules
+      .replace(/^---+$/gim, '<hr class="my-6 border-t border-gray-300 dark:border-gray-700" />');
+  };
+
   const selectProject = async (project: ProjectIdea) => {
     setSelectedProject(project);
     setProjectDetails(null);
@@ -145,7 +185,10 @@ const Projects = () => {
       }
 
       const data = await response.json();
-      setProjectDetails(data.choices[0]?.message?.content || "Sorry, I couldn't generate details for this project.");
+      const content = data.choices[0]?.message?.content || "Sorry, I couldn't generate details for this project.";
+      
+      // Format the markdown content with our improved formatter
+      setProjectDetails(formatMarkdownContent(content));
       
       // Attempt to render any mermaid diagrams in the response
       setTimeout(() => {
@@ -154,7 +197,7 @@ const Projects = () => {
       
     } catch (error) {
       console.error("Error fetching project details:", error);
-      setProjectDetails("Sorry, there was an error generating the project details. Please make sure your API key is set up correctly.");
+      setProjectDetails("<p class='text-red-600 dark:text-red-400'>Sorry, there was an error generating the project details. Please make sure your API key is set up correctly.</p>");
     }
   };
 
@@ -250,7 +293,7 @@ const Projects = () => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "Authorization": `Bearer ${import.meta.env.VITE_GROQ_API_KEY || "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"}`
+          "Authorization": `Bearer ${import.meta.env.VITE_GROQ_API_KEY || "PLACEHOLDER_API_KEY"}`
         },
         body: JSON.stringify({
           model: "llama3-70b-8192",
@@ -527,17 +570,8 @@ const Projects = () => {
               </div>
             ) : (
               <div className="prose dark:prose-invert max-w-none">
-                <div dangerouslySetInnerHTML={{ 
-                  __html: projectDetails
-                    .replace(/^# (.*$)/gim, '<h1 class="text-2xl font-bold mb-4 mt-6">$1</h1>')
-                    .replace(/^## (.*$)/gim, '<h2 class="text-xl font-bold mb-3 mt-5">$1</h2>')
-                    .replace(/^### (.*$)/gim, '<h3 class="text-lg font-bold mb-2 mt-4">$1</h3>')
-                    .replace(/\*\*(.*?)\*\*/gim, '<strong>$1</strong>')
-                    .replace(/\*(.*?)\*/gim, '<em>$1</em>')
-                    .replace(/```mermaid([\s\S]*?)```/gim, '<pre class="mermaid">$1</pre>')
-                    .replace(/```([\s\S]*?)```/gim, '<pre class="bg-gray-100 dark:bg-gray-900 p-4 rounded-md overflow-x-auto"><code>$1</code></pre>')
-                    .replace(/`(.*?)`/gim, '<code class="bg-gray-100 dark:bg-gray-900 px-1 py-0.5 rounded">$1</code>')
-                }} />
+                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6"
+                  dangerouslySetInnerHTML={{ __html: projectDetails }} />
               </div>
             )}
           </div>

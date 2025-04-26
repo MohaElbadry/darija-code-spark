@@ -1,6 +1,8 @@
-
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Search, Book, ArrowRight, Check } from "lucide-react";
+import ReactMarkdown from 'react-markdown';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 
 interface LearningTopic {
   id: string;
@@ -106,6 +108,24 @@ const Learning = () => {
     return saved ? JSON.parse(saved) : [];
   });
 
+  // Add light/dark mode state
+  const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      return window.matchMedia('(prefers-color-scheme: dark)').matches;
+    }
+    return false;
+  });
+
+  // Listen for system preference changes
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+      const handler = (e: MediaQueryListEvent) => setIsDarkMode(e.matches);
+      mediaQuery.addEventListener('change', handler);
+      return () => mediaQuery.removeEventListener('change', handler);
+    }
+  }, []);
+
   const categories = [
     { id: "all", name: "All" },
     { id: "web", name: "Web Development" },
@@ -205,6 +225,86 @@ const Learning = () => {
     
     setCompletedLessons(newCompletedLessons);
     localStorage.setItem("completedLessons", JSON.stringify(newCompletedLessons));
+  };
+
+  // Custom renderer components for ReactMarkdown
+  const renderers = {
+    h1: ({node, ...props}) => (
+      <h1 className="text-3xl font-bold mt-8 mb-4 text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-700 pb-2" {...props} />
+    ),
+    h2: ({node, ...props}) => (
+      <h2 className="text-2xl font-bold mt-6 mb-3 text-gray-900 dark:text-white" {...props} />
+    ),
+    h3: ({node, ...props}) => (
+      <h3 className="text-xl font-semibold mt-5 mb-2 text-gray-800 dark:text-gray-100" {...props} />
+    ),
+    h4: ({node, ...props}) => (
+      <h4 className="text-lg font-semibold mt-4 mb-2 text-gray-800 dark:text-gray-100" {...props} />
+    ),
+    p: ({node, ...props}) => (
+      <p className="my-3 text-gray-700 dark:text-gray-300 leading-relaxed" {...props} />
+    ),
+    ul: ({node, ...props}) => (
+      <ul className="list-disc pl-6 my-4 space-y-2 text-gray-700 dark:text-gray-300" {...props} />
+    ),
+    ol: ({node, ...props}) => (
+      <ol className="list-decimal pl-6 my-4 space-y-2 text-gray-700 dark:text-gray-300" {...props} />
+    ),
+    li: ({node, ...props}) => (
+      <li className="mb-1" {...props} />
+    ),
+    blockquote: ({node, ...props}) => (
+      <blockquote className="border-l-4 border-morocco-blue pl-4 py-1 my-4 bg-blue-50 dark:bg-gray-700/30 italic text-gray-700 dark:text-gray-300" {...props} />
+    ),
+    code: ({node, inline, className, children, ...props}) => {
+      const match = /language-(\w+)/.exec(className || '');
+      const language = match ? match[1] : '';
+      
+      return !inline ? (
+        <div className="my-4 rounded-md overflow-hidden">
+          <div className="bg-gray-800 dark:bg-gray-900 px-4 py-2 text-xs text-gray-200 flex items-center justify-between">
+            <span>{language || 'code'}</span>
+          </div>
+          <SyntaxHighlighter
+            style={oneDark}
+            language={language}
+            PreTag="div"
+            className="rounded-b-md"
+            showLineNumbers
+            wrapLines
+          >
+            {String(children).replace(/\n$/, '')}
+          </SyntaxHighlighter>
+        </div>
+      ) : (
+        <code className="bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded text-gray-800 dark:text-gray-200 font-mono text-sm" {...props}>
+          {children}
+        </code>
+      );
+    },
+    a: ({node, ...props}) => (
+      <a className="text-morocco-blue dark:text-morocco-mint hover:underline" {...props} />
+    ),
+    table: ({node, ...props}) => (
+      <div className="overflow-x-auto my-6">
+        <table className="min-w-full border-collapse border border-gray-300 dark:border-gray-700" {...props} />
+      </div>
+    ),
+    thead: ({node, ...props}) => (
+      <thead className="bg-gray-100 dark:bg-gray-800" {...props} />
+    ),
+    th: ({node, ...props}) => (
+      <th className="border border-gray-300 dark:border-gray-700 px-4 py-2 text-left text-sm font-semibold text-gray-900 dark:text-white" {...props} />
+    ),
+    td: ({node, ...props}) => (
+      <td className="border border-gray-300 dark:border-gray-700 px-4 py-2 text-sm text-gray-700 dark:text-gray-300" {...props} />
+    ),
+    hr: ({node, ...props}) => (
+      <hr className="my-6 border-gray-300 dark:border-gray-700" {...props} />
+    ),
+    img: ({node, ...props}) => (
+      <img className="max-w-full h-auto rounded-md my-4" {...props} />
+    ),
   };
 
   return (
@@ -334,7 +434,7 @@ const Learning = () => {
           )}
         </>
       ) : (
-        <div className="max-w-3xl mx-auto">
+        <div className="max-w-4xl mx-auto">
           <button
             onClick={handleBackToTopics}
             className="mb-6 flex items-center text-morocco-blue dark:text-morocco-mint hover:underline"
@@ -365,17 +465,12 @@ const Learning = () => {
                 <p className="mt-4 text-gray-600 dark:text-gray-300">Generating learning content...</p>
               </div>
             ) : topicContent ? (
-              <div className="prose dark:prose-invert max-w-none">
-                <div dangerouslySetInnerHTML={{ 
-                  __html: topicContent
-                    .replace(/^# (.*$)/gim, '<h1 class="text-2xl font-bold mb-4 mt-6">$1</h1>')
-                    .replace(/^## (.*$)/gim, '<h2 class="text-xl font-bold mb-3 mt-5">$1</h2>')
-                    .replace(/^### (.*$)/gim, '<h3 class="text-lg font-bold mb-2 mt-4">$1</h3>')
-                    .replace(/\*\*(.*?)\*\*/gim, '<strong>$1</strong>')
-                    .replace(/\*(.*?)\*/gim, '<em>$1</em>')
-                    .replace(/```([\s\S]*?)```/gim, '<pre class="bg-gray-100 dark:bg-gray-900 p-4 rounded-md overflow-x-auto"><code>$1</code></pre>')
-                    .replace(/`(.*?)`/gim, '<code class="bg-gray-100 dark:bg-gray-900 px-1 py-0.5 rounded">$1</code>')
-                }} />
+              <div className="learning-content">
+                <ReactMarkdown
+                  components={renderers}
+                >
+                  {topicContent}
+                </ReactMarkdown>
               </div>
             ) : (
               <p className="text-gray-600 dark:text-gray-300">Failed to load content. Please try again.</p>
