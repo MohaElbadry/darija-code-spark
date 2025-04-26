@@ -8,10 +8,44 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Separator } from '../components/ui/separator';
 import { Textarea } from '../components/ui/textarea';
 import { useToast } from '../components/ui/use-toast';
-import { Loader2, Brain, Save, CheckCircle, RefreshCw } from 'lucide-react';
+import { Loader2, Brain, Save, CheckCircle, RefreshCw, ArrowLeft, BookOpen, Target, Clock } from 'lucide-react';
 import { Label } from '../components/ui/label';
 import { Input } from '../components/ui/input';
 import { Badge } from '../components/ui/badge';
+
+// Import stripMarkdown function
+const stripMarkdown = (text: string) => {
+  if (!text) return '';
+  
+  // Special case for titles that might begin with ## or other header markers
+  let cleaned = text;
+  
+  // First handle titles that specifically start with ## or other header markers
+  if (cleaned.startsWith('##')) {
+    cleaned = cleaned.replace(/^##\s*/, '');
+  } else if (cleaned.startsWith('#')) {
+    cleaned = cleaned.replace(/^#\s*/, '');
+  }
+  
+  // Then apply all other Markdown cleaning
+  cleaned = cleaned
+    // Handle headings - specifically target strings starting with ## at beginning of string or line
+    .replace(/^##\s+(.+)$/gm, '$1') // Level 2 heading at start of a line
+    .replace(/^#{1,6}\s+(.+)$/gm, '$1') // Any level heading at start of a line
+    // Handle bold and italic, even across multiple lines using [\s\S] instead of .
+    .replace(/\*\*([\s\S]*?)\*\*/g, '$1') // Remove bold
+    .replace(/\*([\s\S]*?)\*/g, '$1') // Remove italic
+    .replace(/__([\s\S]*?)__/g, '$1') // Remove underscores bold
+    .replace(/_([\s\S]*?)_/g, '$1') // Remove underscores italic
+    .replace(/\[([\s\S]*?)\]\(([\s\S]*?)\)/g, '$1') // Replace links with just text
+    .replace(/`{1,3}([\s\S]*?)`{1,3}/g, '$1') // Remove code blocks
+    .replace(/^\s*[-*+]\s/gm, '') // Remove bullet list markers completely
+    .replace(/^\s*\d+\.\s/gm, '') // Remove numbered list markers completely
+    .replace(/\n\s*\n/g, '\n\n') // Normalize line breaks
+    .trim(); // Remove extra whitespace
+  
+  return cleaned;
+};
 
 // Define the structure for a step, including keywords
 type RoadmapStep = {
@@ -23,131 +57,185 @@ type RoadmapStep = {
   keywords?: string[];    // e.g., ["HTML structure", "HTML elements"]
 };
 
+// Add this type declaration for error handling
+interface ErrorWithMessage {
+  message?: string;
+}
+
 const RoadmapGeneratorContent: React.FC = () => {
-  const { t, language: userLanguage } = useLanguage(); // Language for UI elements
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { toast } = useToast();
-
-  // --- Preferences from URL ---
+  
   const pathId = searchParams.get('path') || '';
   const level = searchParams.get('level') || '';
-  const language = searchParams.get('language') || 'english'; // Language for roadmap content
-  const customPrompt = searchParams.get('goal') || ''; // Optional goal
-
-  // --- Component State ---
-  const [loading, setLoading] = useState(true); // Initial data loading
-  const [generating, setGenerating] = useState(false); // AI generation in progress
-  const [saving, setSaving] = useState(false); // Saving roadmap in progress
-  const [path, setPath] = useState<{ name: string; id: string; }>({ name: '', id: '' });
+  const language = searchParams.get('language') || '';
+  
+  const [loading, setLoading] = useState(true);
+  const [generating, setGenerating] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [path, setPath] = useState<{id: string, name: string}>({id: '', name: ''});
   const [roadmapTitle, setRoadmapTitle] = useState('');
   const [roadmapDescription, setRoadmapDescription] = useState('');
   const [steps, setSteps] = useState<RoadmapStep[]>([]);
+  const [customPrompt, setCustomPrompt] = useState('');
   const [roadmapId, setRoadmapId] = useState<string | null>(null);
-  const [apiError, setApiError] = useState<boolean>(false); // Track if AI generation failed
 
-  // --- Effects ---
-
-  // 1. Fetch Learning Path details when component mounts or pathId changes
   useEffect(() => {
     if (!pathId) {
-      console.warn('No pathId found in URL, redirecting to setup.');
       navigate('/learning-setup');
       return;
     }
-    console.log(`[Effect 1] pathId changed to: ${pathId}. Fetching path data...`);
     fetchPathData();
-  }, [pathId, navigate]); // Rerun if pathId changes
+  }, [pathId, navigate, t]);
 
-  // 2. Trigger initial roadmap generation *after* path data is successfully loaded
-  useEffect(() => {
-    // Only run if path has been loaded (id and name exist) AND steps haven't been loaded yet
-    if (path.id && path.name && steps.length === 0 && !loading && !generating) {
-      console.log(`[Effect 2] Path data loaded for '${path.name}'. Triggering initial roadmap generation...`);
-      generateRoadmap(); // Call the function that uses AI
-    }
-  }, [path, loading, generating]); // Rerun if path, loading, or generating status changes
-
-  // --- Data Fetching and Generation ---
-
-  // Fetches the details of the selected learning path
   const fetchPathData = async () => {
-    setLoading(true);
-    setPath({ name: '', id: '' }); // Reset path data
-    setSteps([]); // Clear existing steps
-    setApiError(false); // Reset error state
-    console.log(`Fetching details for path ID: ${pathId}`);
     try {
+      if (!pathId) {
+        console.error("No path ID provided");
+        toast({
+          title: t('roadmap.error'),
+          description: t('roadmap.error_missing_path'),
+          variant: 'destructive',
+        });
+        navigate('/learning-setup');
+        return;
+      }
+
       const { data, error } = await supabase
         .from('learning_paths')
         .select('*')
         .eq('id', pathId)
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching path data:", error);
+        toast({
+          title: t('roadmap.error'),
+          description: t('roadmap.error_loading_path'),
+          variant: 'destructive',
+        });
+        navigate('/learning-setup');
+        return;
+      }
+      
       if (!data) {
-        console.error(`Learning path with ID ${pathId} not found.`);
-        toast({ title: 'Error', description: 'Learning path not found.', variant: 'destructive' });
+        console.error("No path data found for ID:", pathId);
+        toast({
+          title: t('roadmap.error'),
+          description: t('roadmap.error_path_not_found'),
+          variant: 'destructive',
+        });
         navigate('/learning-setup');
         return;
       }
 
-      console.log(`Successfully fetched path data: ${data.name}`);
-      // Set path state - the useEffect above will trigger generation
+      if (!data.name || data.name.trim() === '') {
+        console.error("Path data exists but name is empty:", pathId);
+        toast({
+          title: t('roadmap.error'),
+          description: t('roadmap.error_invalid_path_data'),
+          variant: 'destructive',
+        });
+        navigate('/learning-setup');
+        return;
+      }
+
+      // Only set path data and continue if we have a valid path name
       setPath(data);
       
-      const defaultTitle = t('roadmap.default_title', { 
-        path: data.name,
-        level: level.charAt(0).toUpperCase() + level.slice(1)
-      });
-      const defaultDescription = t('roadmap.default_description', {
-        path: data.name,
-        level,
-        language
-      });
+      // Customize title and description based on the selected path
+      let defaultTitle = '';
+      let defaultDescription = '';
+      
+      switch (data.name.toLowerCase()) {
+        case 'web development':
+          defaultTitle = t('roadmap.web_dev_title', { 
+            level: level.charAt(0).toUpperCase() + level.slice(1)
+          });
+          defaultDescription = t('roadmap.web_dev_description', {
+            level,
+            language
+          });
+          break;
+        case 'mobile development':
+          defaultTitle = t('roadmap.mobile_dev_title', { 
+            level: level.charAt(0).toUpperCase() + level.slice(1)
+          });
+          defaultDescription = t('roadmap.mobile_dev_description', {
+            level,
+            language
+          });
+          break;
+        default:
+          defaultTitle = t('roadmap.default_title', { 
+            path: data.name,
+            level: level.charAt(0).toUpperCase() + level.slice(1)
+          });
+          defaultDescription = t('roadmap.default_description', {
+            path: data.name,
+            level,
+            language
+          });
+      }
       
       setRoadmapTitle(defaultTitle);
       setRoadmapDescription(defaultDescription);
       
-      await generateRoadmap();
+      // Now that we have valid path data, generate the roadmap
+      // Only call generateRoadmap if we have valid path data with a non-empty name
+      if (data && data.name && data.name.trim() !== '') {
+        await generateRoadmap(data);
+      } else {
+        console.error("Cannot generate roadmap with invalid path data");
+        toast({
+          title: t('roadmap.error'),
+          description: t('roadmap.error_invalid_path_data'),
+          variant: 'destructive',
+        });
+      }
       
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Error fetching path data:', error);
       toast({
         title: t('roadmap.error'),
-        description: t('roadmap.error_loading_path'),
+        description: error instanceof Error ? error.message : t('roadmap.error_loading_path'),
         variant: 'destructive',
       });
+    } finally {
       setLoading(false);
-
     }
   };
 
-  // Generates the roadmap using the Supabase AI function
-  const generateRoadmap = async () => {
-    if (!path) {
-      console.log("Path data not yet available for generation.");
+  const generateRoadmap = async (pathData = path) => {
+    if (!pathData || !pathData.name || pathData.name.trim() === '') {
+      console.error("Path data not yet available or invalid for generation.");
+      toast({
+        title: t('roadmap.error'),
+        description: t('roadmap.error_invalid_path'),
+        variant: 'destructive',
+      });
       setLoading(false);
       return;
-
     }
-
+    
     setGenerating(true);
     setLoading(false);
     
     try {
-      console.log("Generating roadmap with preferences:", { pathName: path.name, level, language });
+      console.log("Generating roadmap with preferences:", { pathName: pathData.name, level, language });
       
       const enhancedPrompt = customPrompt || 
         t('roadmap.generation_prompt', {
-          path: path.name,
+          path: pathData.name,
           level,
           language
         });
       
       const response = await supabase.functions.invoke('generate-roadmap', {
         body: JSON.stringify({
-          pathName: path.name,
+          pathName: pathData.name,
           level,
           language,
           customPrompt: enhancedPrompt,
@@ -159,95 +247,73 @@ const RoadmapGeneratorContent: React.FC = () => {
         throw new Error(response.error.message || t('roadmap.error_generation'));
       }
 
+      if (!response.data) {
+        throw new Error(t('roadmap.error_empty'));
+      }
+
       const data = response.data;
       
       console.log("Received roadmap data from Supabase function:", data);
 
-      if (!data || !data.steps || !Array.isArray(data.steps) || data.steps.length === 0) {
+      if (!data.steps || !Array.isArray(data.steps) || data.steps.length === 0) {
         console.warn("Generated roadmap has no steps or is invalid.");
         throw new Error(t('roadmap.error_empty'));
-
       }
-       if (data.steps.length === 0) {
-           // Check if it's the specific fallback response from the function
-           if (data.title === "Default Roadmap" || data.description?.includes("Could not parse AI response")) {
-                console.warn("AI function returned default/fallback roadmap.");
-                throw new Error("AI could not generate a roadmap. Using fallback.");
-           } else {
-               console.warn("AI generated an empty steps array.");
-               throw new Error("AI generated a roadmap with no steps.");
-           }
-      }
-      // --- End Response Validation ---
 
-
-      console.log(`AI function successful. Received ${data.steps.length} steps.`);
-
+      // Apply stripMarkdown to all the text fields
+      const cleanTitle = stripMarkdown(data.title) || roadmapTitle;
+      const cleanDescription = stripMarkdown(data.description) || roadmapDescription;
+      
       const completeSteps = data.steps.map((step, index) => ({
         ...step,
-        description: step.description || t('roadmap.default_step_description', { title: step.title }),
+        title: stripMarkdown(step.title || ''),
+        description: stripMarkdown(step.description) || t('roadmap.default_step_description', { title: stripMarkdown(step.title) }),
         estimated_time: step.estimated_time || (level === 'beginner' ? t('roadmap.time_beginner') : 
                                               level === 'intermediate' ? t('roadmap.time_intermediate') : 
                                               t('roadmap.time_advanced')),
-        keywords: step.keywords || [`${path.name}`, `${level}`],
+        keywords: step.keywords || [`${pathData.name}`, `${level}`],
       }));
 
-      setRoadmapTitle(data.title || roadmapTitle);
-      setRoadmapDescription(data.description || roadmapDescription);
+      setRoadmapTitle(cleanTitle);
+      setRoadmapDescription(cleanDescription);
       setSteps(completeSteps);
       setRoadmapId(null);
       
       toast({
         title: t('roadmap.generated'),
         description: t('roadmap.generated_description'),
-
       });
 
     } catch (error: unknown) {
-      console.error('Error during roadmap generation process:', error);
-      setApiError(true); // Set error flag
+      console.error('Error generating roadmap:', error);
       toast({
         title: t('roadmap.error_generation'),
-        description: error.message || t('roadmap.error_try_again'),
-
+        description: error instanceof Error ? error.message : t('roadmap.error_try_again'),
         variant: 'destructive',
       });
-      // Provide fallback steps if AI fails completely
-      setSteps(getDefaultSteps(path.name, level, language)); // Use static templates as fallback
-      setRoadmapTitle(`${path.name} - Fallback Roadmap`);
-      setRoadmapDescription(`Failed to generate AI roadmap. Using standard ${level} template.`);
-
+      setSteps([]); // Clear steps on error
     } finally {
-      setGenerating(false); // Stop generating indicator
-      // Loading indicator for the page should have stopped in fetchPathData
+      setGenerating(false);
     }
   };
 
-  // --- Localization Helpers ---
-
-  // Gets a localized description string
-  const getLocalizedDescription = (pathName: string, userLevel: string, lang: string): string => {
-      // (Keep the existing implementation of this function)
-      switch(lang) {
-        case 'arabic':
-          return `خطة شاملة لتعلم ${pathName} بمستوى ${getArabicLevel(userLevel)} مصممة للمتحدثين باللغة العربية.`;
-        case 'darija':
-          return `خطة متكاملة باش تعلم ${pathName} ف المستوى ${getDarijaLevel(userLevel)} مخصصة للناس اللي كيهضرو بالدارجة.`;
-        case 'french':
-          return `Un plan d\'apprentissage complet pour ${pathName} au niveau ${getFrenchLevel(userLevel)}, adapté aux francophones.`;
-        default: // english
-          return `A comprehensive roadmap for learning ${pathName} at a ${userLevel} level, tailored for English speakers.`;
+  const saveRoadmap = async () => {
+    setSaving(true);
+    
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        navigate('/auth');
+        return;
       }
-      
-      let roadmapRecord;
       
       console.log("Saving new roadmap...");
       const { data: newRoadmapData, error: insertRoadmapError } = await supabase
         .from('roadmaps')
         .insert({
           path_id: pathId,
-          title: roadmapTitle,
-          description: roadmapDescription,
+          title: stripMarkdown(roadmapTitle),
+          description: stripMarkdown(roadmapDescription),
           level,
           language,
           ai_generated: true,
@@ -256,16 +322,17 @@ const RoadmapGeneratorContent: React.FC = () => {
         .single();
           
       if (insertRoadmapError) throw insertRoadmapError;
-      roadmapRecord = newRoadmapData;
+      const roadmapRecord = newRoadmapData;
       const newRoadmapId = roadmapRecord.id;
       console.log("Created roadmap record:", newRoadmapId);
       
       const stepsToInsert = steps.map((step, index) => ({
         roadmap_id: newRoadmapId,
-        title: step.title,
-        description: step.description,
+        title: stripMarkdown(step.title),
+        description: stripMarkdown(step.description),
         order_index: index,
         estimated_time: step.estimated_time,
+        keywords: step.keywords
       }));
       
       console.log("Inserting steps:", stepsToInsert);
@@ -282,154 +349,203 @@ const RoadmapGeneratorContent: React.FC = () => {
       
       navigate(`/roadmap/${newRoadmapId}`);
 
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error saving roadmap:', error);
       toast({
         title: t('roadmap.error_saving'),
-        description: error.message || t('roadmap.error_try_again'),
+        description: error instanceof Error ? error.message : t('roadmap.error_try_again'),
         variant: 'destructive',
       });
     } finally {
       setSaving(false);
-
     }
-
-    // Absolute fallback (should ideally not be reached if English is default)
-    return Array.from({ length: defaultStepCount }, (_, i) => ({
-         title: `Step ${i + 1}: Generic Title`,
-         description: 'Generic step description.',
-         order_index: i,
-         estimated_time: '2-4 weeks',
-         keywords: defaultKeywords
-     }));
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
         <div className="container mx-auto py-10 px-4 text-center">
-          <Loader2 className="h-10 w-10 animate-spin mx-auto" />
-          <p className="mt-4">{t('roadmap.loading')}</p>
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-8 shadow-lg max-w-md mx-auto">
+            <div className="flex items-center justify-center gap-4">
+              <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+              <div className="text-left">
+                <p className="text-lg font-semibold text-gray-800 dark:text-white">Loading roadmap...</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">Please wait while we prepare your learning journey</p>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       <div className="container mx-auto py-10 px-4">
-        <Card className="mb-8">
-          <CardHeader>
-            <CardTitle className="flex items-center justify-between">
-              <span>{t('roadmap.generator')}</span>
-              <Button 
-                variant="outline" 
+        <Button 
+          variant="ghost" 
+          className="mb-6 flex items-center gap-2"
+          onClick={() => navigate('/learning-setup')}
+          disabled={loading || generating}
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back to Setup
+        </Button>
+
+        <Card className="shadow-lg rounded-lg border-0 bg-white dark:bg-gray-800 overflow-hidden max-w-4xl mx-auto">
+          <CardHeader className="bg-gradient-to-r from-blue-500 to-indigo-500 rounded-t-lg p-8">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-white/10 rounded-full">
+                <Brain className="h-7 w-7 text-white" />
+              </div>
+              <div>
+                <CardTitle className="text-white text-2xl font-bold">Roadmap Generator</CardTitle>
+                <CardDescription className="text-blue-100 mt-2 text-base">
+                  Customize and generate your personalized learning roadmap
+                </CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          
+          <CardContent className="space-y-8 p-8">
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                <BookOpen className="h-4 w-4 text-blue-500" />
+                <Label className="font-semibold text-gray-800 dark:text-white text-base">
+                  Learning Path: {path?.name || 'Loading...'}
+                </Label>
+              </div>
+              
+              <div className="flex items-center gap-2">
+                <Target className="h-4 w-4 text-blue-500" />
+                <Label className="font-semibold text-gray-800 dark:text-white text-base">
+                  Level: {level ? level.charAt(0).toUpperCase() + level.slice(1) : 'Loading...'}
+                </Label>
+              </div>
+              
+              <div className="flex items-center gap-2">
+                <Clock className="h-4 w-4 text-blue-500" />
+                <Label className="font-semibold text-gray-800 dark:text-white text-base">
+                  Language: {language ? language.charAt(0).toUpperCase() + language.slice(1) : 'Loading...'}
+                </Label>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <Label className="font-semibold text-gray-800 dark:text-white text-base">Roadmap Title</Label>
+              <Input
+                value={stripMarkdown(roadmapTitle)}
+                onChange={(e) => setRoadmapTitle(e.target.value)}
+                placeholder={t('roadmap.title_placeholder')}
+              />
+            </div>
+
+            <div className="space-y-4">
+              <Label className="font-semibold text-gray-800 dark:text-white text-base">Description</Label>
+              <Textarea
+                value={stripMarkdown(roadmapDescription)}
+                onChange={(e) => setRoadmapDescription(e.target.value)}
+                placeholder={t('roadmap.description_placeholder')}
+                className="h-24"
+              />
+            </div>
+
+            <div className="space-y-4">
+              <Label className="font-semibold text-gray-800 dark:text-white text-base">Custom Instructions (Optional)</Label>
+              <Textarea
+                value={customPrompt}
+                onChange={(e) => setCustomPrompt(e.target.value)}
+                placeholder="Add any specific requirements or preferences for your roadmap..."
+                className="min-h-[120px] rounded-lg border-gray-200 dark:border-gray-700 focus:ring-2 focus:ring-blue-400 text-base bg-white dark:bg-gray-700"
+                disabled={loading || generating}
+              />
+            </div>
+
+            <div className="space-y-6">
+              {steps.map((step, index) => (
+                <Card key={index} className="border-l-4 border-blue-500">
+                  <CardHeader className="pb-2">
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="flex items-center gap-2">
+                        <span className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-100 text-blue-800 text-sm font-medium">
+                          {index + 1}
+                        </span>
+                        <h3 className="font-medium text-gray-800 dark:text-white">
+                          {stripMarkdown(step.title)}
+                        </h3>
+                      </CardTitle>
+                      <Badge variant="outline" className="bg-blue-50 text-blue-800">
+                        {step.estimated_time}
+                      </Badge>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-gray-600 dark:text-gray-300 my-2 whitespace-pre-line text-sm">
+                      {stripMarkdown(step.description)}
+                    </p>
+                    {step.keywords && step.keywords.length > 0 && (
+                      <div className="flex flex-wrap gap-2 mt-4">
+                        {step.keywords.map((keyword, i) => (
+                          <Badge key={i} variant="secondary" className="bg-gray-100 dark:bg-gray-700">
+                            {keyword.replace(/[*_`]/g, '').trim()}
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </CardContent>
+
+          <CardFooter className="px-8 pb-8 pt-0">
+            <div className="flex gap-4 w-full">
+              <Button
                 onClick={generateRoadmap}
-                disabled={generating}
+                disabled={loading || generating}
+                className="flex-1 h-12 bg-gradient-to-r from-blue-500 to-indigo-500 text-white font-semibold text-base rounded-lg shadow hover:from-blue-600 hover:to-indigo-600 transition transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 {generating ? (
                   <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    {t('roadmap.generating')}
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Regenerating...
                   </>
                 ) : (
                   <>
-                    <Brain className="mr-2 h-4 w-4" />
-                    {t('roadmap.regenerate')}
+                    <RefreshCw className="h-4 w-4" />
+                    Regenerate Roadmap
                   </>
                 )}
               </Button>
-            </CardTitle>
-            <CardDescription>
-              {t('roadmap.generator_description')}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="title">{t('roadmap.title')}</Label>
-              <Input
-                id="title"
-                value={roadmapTitle}
-                onChange={(e) => setRoadmapTitle(e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="description">{t('roadmap.description')}</Label>
-              <Textarea
-                id="description"
-                value={roadmapDescription}
-                onChange={(e) => setRoadmapDescription(e.target.value)}
-                rows={3}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="customPrompt">{t('roadmap.custom_prompt')}</Label>
-              <Textarea
-                id="customPrompt"
-                value={customPrompt}
-                onChange={(e) => setCustomPrompt(e.target.value)}
-                placeholder={t('roadmap.prompt_placeholder')}
-                rows={3}
-              />
-            </div>
-          </CardContent>
-        </Card>
 
-        <div className="space-y-6">
-          {steps.map((step, index) => (
-            <Card key={index}>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle className="flex items-center gap-2">
-                    <span className="text-gray-500">#{index + 1}</span>
-                    {step.title}
-                  </CardTitle>
-                  <Badge variant="outline">{step.estimated_time}</Badge>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <p className="text-gray-600">{step.description}</p>
-                {step.keywords && step.keywords.length > 0 && (
-                  <div className="flex flex-wrap gap-2 mt-4">
-                    {step.keywords.map((keyword, i) => (
-                      <Badge key={i} variant="secondary">{keyword}</Badge>
-                    ))}
-                  </div>
+              <Button
+                onClick={saveRoadmap}
+                disabled={loading || saving || steps.length === 0}
+                className="flex-1 h-12 bg-gradient-to-r from-green-500 to-emerald-500 text-white font-semibold text-base rounded-lg shadow hover:from-green-600 hover:to-emerald-600 transition transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                {saving ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    <Save className="h-4 w-4" />
+                    Save Roadmap
+                  </>
                 )}
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-
-        <div className="mt-8 flex justify-end">
-          <Button 
-            onClick={saveRoadmap}
-            disabled={saving || steps.length === 0}
-            className="flex items-center gap-2"
-          >
-            {saving ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" />
-                {t('roadmap.saving')}
-              </>
-            ) : (
-              <>
-                <Save className="h-4 w-4" />
-                {t('roadmap.save_roadmap')}
-              </>
-            )}
-          </Button>
-        </div>
+              </Button>
+            </div>
+          </CardFooter>
+        </Card>
       </div>
     </div>
   );
-
 };
 
 const RoadmapGenerator: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50">
-      <Navbar />
       <RoadmapGeneratorContent />
     </div>
   );

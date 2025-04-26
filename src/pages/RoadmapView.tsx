@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Separator } from '../components/ui/separator';
 import { Progress } from '../components/ui/progress';
 import { useToast } from '../components/ui/use-toast';
-import { CheckCircle, Clock, ArrowLeft, PenLine, CheckCircle2, LucideLoader2, Edit, Link as LinkIcon, Info, BarChart } from 'lucide-react';
+import { CheckCircle, Clock, ArrowLeft, PenLine, CheckCircle2, LucideLoader2, Edit, Link as LinkIcon, Info, BarChart, BookOpen, Loader2 } from 'lucide-react';
 import { Badge } from '../components/ui/badge';
 
 type RoadmapStep = {
@@ -37,19 +37,41 @@ type Roadmap = {
 
 const stripMarkdown = (text: string) => {
   if (!text) return '';
-  // Replace markdown headings, bold, italic, links, code blocks, and lists with plain text
-  return text
-    .replace(/#{1,6}\s/g, '') // Remove headings
-    .replace(/\*\*(.*?)\*\*/g, '$1') // Remove bold
-    .replace(/\*(.*?)\*/g, '$1') // Remove italic
-    .replace(/\_\_(.*?)\_\_/g, '$1') // Remove underscores bold
-    .replace(/\_(.*?)\_/g, '$1') // Remove underscores italic
-    .replace(/\[(.*?)\]\((.*?)\)/g, '$1') // Replace links with just text
+  
+  // For debugging
+  console.log('Original text:', text);
+  
+  // Special case for titles that might begin with ## or other header markers
+  let cleaned = text;
+  
+  // First handle titles that specifically start with ## or other header markers
+  if (cleaned.startsWith('##')) {
+    cleaned = cleaned.replace(/^##\s*/, '');
+  } else if (cleaned.startsWith('#')) {
+    cleaned = cleaned.replace(/^#\s*/, '');
+  }
+  
+  // Then apply all other Markdown cleaning
+  cleaned = cleaned
+    // Handle headings - specifically target strings starting with ## at beginning of string or line
+    .replace(/^##\s+(.+)$/gm, '$1') // Level 2 heading at start of a line
+    .replace(/^#{1,6}\s+(.+)$/gm, '$1') // Any level heading at start of a line
+    // Handle bold and italic, even across multiple lines using [\s\S] instead of .
+    .replace(/\*\*([\s\S]*?)\*\*/g, '$1') // Remove bold
+    .replace(/\*([\s\S]*?)\*/g, '$1') // Remove italic
+    .replace(/__([\s\S]*?)__/g, '$1') // Remove underscores bold
+    .replace(/_([\s\S]*?)_/g, '$1') // Remove underscores italic
+    .replace(/\[([\s\S]*?)\]\(([\s\S]*?)\)/g, '$1') // Replace links with just text
     .replace(/`{1,3}([\s\S]*?)`{1,3}/g, '$1') // Remove code blocks
-    .replace(/^\s*[-*+]\s/gm, '• ') // Replace bullet lists with simple bullet points
-    .replace(/^\s*\d+\.\s/gm, '$1. ') // Keep numbered lists
+    .replace(/^\s*[-*+]\s/gm, '') // Remove bullet list markers completely
+    .replace(/^\s*\d+\.\s/gm, '') // Remove numbered list markers completely
     .replace(/\n\s*\n/g, '\n\n') // Normalize line breaks
     .trim(); // Remove extra whitespace
+  
+  // For debugging
+  console.log('Cleaned text:', cleaned);
+  
+  return cleaned;
 };
 
 const RoadmapViewContent: React.FC = () => {
@@ -283,10 +305,17 @@ const RoadmapViewContent: React.FC = () => {
   
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
         <div className="container mx-auto py-10 px-4 text-center">
-          <LucideLoader2 className="h-10 w-10 animate-spin mx-auto" />
-          <p className="mt-4">Loading your roadmap...</p>
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-8 shadow-lg max-w-md mx-auto">
+            <div className="flex items-center justify-center gap-4">
+              <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+              <div className="text-left">
+                <p className="text-lg font-semibold text-gray-800 dark:text-white">Loading your roadmap...</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">Please wait while we fetch your learning journey</p>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -294,17 +323,21 @@ const RoadmapViewContent: React.FC = () => {
   
   if (!roadmap) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
         <div className="container mx-auto py-10 px-4 text-center">
-          <h1 className="text-2xl font-bold mb-4">Roadmap Not Found</h1>
-          <Button onClick={() => navigate('/')}>Return Home</Button>
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-8 shadow-lg max-w-md mx-auto">
+            <h1 className="text-2xl font-bold mb-4 text-gray-800 dark:text-white">Roadmap Not Found</h1>
+            <Button onClick={() => navigate('/')} className="bg-gradient-to-r from-blue-500 to-indigo-500 text-white">
+              Return Home
+            </Button>
+          </div>
         </div>
       </div>
     );
   }
   
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       <div className="container mx-auto py-10 px-4">
         <Button 
           variant="ghost" 
@@ -315,11 +348,23 @@ const RoadmapViewContent: React.FC = () => {
           Back to Home
         </Button>
         
-        <div className="flex justify-between items-start mb-6">
-          <div>
-            <h1 className="text-3xl font-bold">{roadmap.title}</h1>
-            <p className="text-gray-600 mt-2">{roadmap.description}</p>
-            <div className="flex items-center gap-2 mt-4">
+        <Card className="shadow-lg rounded-lg border-0 bg-white dark:bg-gray-800 overflow-hidden max-w-4xl mx-auto">
+          <CardHeader className="bg-gradient-to-r from-blue-500 to-indigo-500 rounded-t-lg p-8">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-white/10 rounded-full">
+                <BookOpen className="h-7 w-7 text-white" />
+              </div>
+              <div>
+                <CardTitle className="text-white text-2xl font-bold">{stripMarkdown(roadmap.title)}</CardTitle>
+                <CardDescription className="text-blue-100 mt-2 text-base">
+                  {stripMarkdown(roadmap.description)}
+                </CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          
+          <CardContent className="p-8">
+            <div className="flex items-center gap-4 mb-8">
               <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">
                 {roadmap.path_name}
               </span>
@@ -330,128 +375,119 @@ const RoadmapViewContent: React.FC = () => {
                 {roadmap.language.charAt(0).toUpperCase() + roadmap.language.slice(1)}
               </span>
             </div>
-          </div>
-          
-          <Button
-            variant="outline"
-            className="flex items-center gap-2"
-            onClick={() => navigate(`/roadmap/edit/${id}`)}
-          >
-            <Edit className="h-4 w-4" />
-            Edit Roadmap
-          </Button>
-        </div>
-        
-        <Card className="mb-8">
-          <CardHeader>
-            <CardTitle className="text-lg">Your Progress</CardTitle>
-            <CardDescription>
-              {progress}% complete ({steps.filter(step => step.status === 'completed').length} of {steps.length} steps)
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Progress value={progress} className="h-3" />
-          </CardContent>
-        </Card>
-        
-        <h2 className="text-2xl font-bold mb-6">Learning Steps</h2>
-        
-        <div className="space-y-6">
-          {steps.map((step, index) => (
-            <Card key={step.id} className={`border-l-4 ${
-              step.status === 'completed' 
-                ? 'border-l-green-500' 
-                : step.status === 'in_progress' 
-                  ? 'border-l-blue-500' 
-                  : 'border-l-gray-300'
-            }`}>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-lg flex items-start gap-2">
-                  <span className="flex h-7 w-7 items-center justify-center rounded-full bg-gray-200 text-gray-700 text-sm font-medium">
-                    {index + 1}
-                  </span>
-                  <span className="mt-1">{step.title}</span>
-                </CardTitle>
+            
+            <Card className="mb-8">
+              <CardHeader>
+                <CardTitle className="text-lg">Your Progress</CardTitle>
+                <CardDescription>
+                  {progress}% complete ({steps.filter(step => step.status === 'completed').length} of {steps.length} steps)
+                </CardDescription>
               </CardHeader>
               <CardContent>
-                <p className="text-gray-600 mb-4 whitespace-pre-line font-normal leading-relaxed">
-                  {stripMarkdown(step.description)}
-                </p>
-                
-                <div className="flex flex-wrap items-center gap-3 mb-3">
-                  {step.keywords && step.keywords.length > 0 && 
-                    step.keywords.map((keyword, kidx) => (
-                      <Badge key={kidx} variant="outline" className="bg-gray-50">
-                        {keyword}
-                      </Badge>
-                    ))
-                  }
-                </div>
-                
-                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
-                  {step.estimated_time && (
-                    <div className="flex items-center text-gray-700 text-sm font-medium bg-gray-100 px-3 py-1 rounded-full">
-                      <Clock className="h-4 w-4 mr-1 text-darija-primary" />
-                      <span>Estimated: {step.estimated_time}</span>
-                    </div>
-                  )}
-                  
-                  <div className="flex gap-2">
-                    <Button
-                      variant={step.status === 'pending' ? 'secondary' : 'outline'}
-                      size="sm"
-                      onClick={() => updateStepStatus(step.id, 'pending')}
-                      disabled={savingProgress === step.id}
-                      className="text-sm"
-                    >
-                      Not Started
-                    </Button>
-                    <Button
-                      variant={step.status === 'in_progress' ? 'secondary' : 'outline'}
-                      size="sm"
-                      onClick={() => updateStepStatus(step.id, 'in_progress')}
-                      disabled={savingProgress === step.id}
-                      className="text-sm"
-                    >
-                      In Progress
-                    </Button>
-                    <Button
-                      variant={step.status === 'completed' ? 'secondary' : 'outline'}
-                      size="sm"
-                      onClick={() => updateStepStatus(step.id, 'completed')}
-                      disabled={savingProgress === step.id}
-                      className="text-sm flex items-center gap-1"
-                    >
-                      {step.status === 'completed' && <CheckCircle2 className="h-3 w-3" />}
-                      Completed
-                    </Button>
-                  </div>
-                </div>
-                
-                <Separator className="my-4" />
-                
-                <div>
-                  <div className="flex items-center gap-2 mb-2">
-                    <PenLine className="h-4 w-4 text-gray-500" />
-                    <span className="text-sm font-medium">Your Notes</span>
-                  </div>
-                  <textarea
-                    value={step.notes || ''}
-                    onChange={(e) => {
-                      const updatedSteps = steps.map(s => 
-                        s.id === step.id ? { ...s, notes: e.target.value } : s
-                      );
-                      setSteps(updatedSteps);
-                    }}
-                    onBlur={(e) => updateStepNotes(step.id, e.target.value)}
-                    placeholder="Add your notes here..."
-                    className="w-full p-3 border rounded-md text-sm min-h-24"
-                  />
-                </div>
+                <Progress value={progress} className="h-3" />
               </CardContent>
             </Card>
-          ))}
-        </div>
+            
+            <h2 className="text-2xl font-bold mb-6 text-gray-800 dark:text-white">Learning Steps</h2>
+            
+            <div className="space-y-6">
+              {steps.map((step, index) => (
+                <Card key={step.id} className={`border-l-4 ${
+                  step.status === 'completed' 
+                    ? 'border-l-green-500' 
+                    : step.status === 'in_progress' 
+                      ? 'border-l-blue-500' 
+                      : 'border-l-gray-300'
+                } hover:shadow-md transition-shadow duration-200`}>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-lg flex items-start gap-2">
+                      <span className="flex h-7 w-7 items-center justify-center rounded-full bg-blue-100 text-blue-800 text-sm font-medium">
+                        {index + 1}
+                      </span>
+                      <span className="mt-1 font-semibold">{stripMarkdown(step.title)}</span>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <p className="text-gray-600 dark:text-gray-300 mb-4 whitespace-pre-line font-normal leading-relaxed text-base">
+                      {stripMarkdown(step.description)}
+                    </p>
+                    
+                    <div className="flex flex-wrap items-center gap-3 mb-3">
+                      {step.keywords && step.keywords.length > 0 && 
+                        step.keywords.map((keyword, kidx) => (
+                          <Badge key={kidx} variant="outline" className="bg-gray-100 dark:bg-gray-700 text-sm">
+                            {keyword}
+                          </Badge>
+                        ))
+                      }
+                    </div>
+                    
+                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
+                      {step.estimated_time && (
+                        <div className="flex items-center text-gray-700 dark:text-gray-300 text-sm font-medium bg-gray-100 dark:bg-gray-700 px-3 py-1 rounded-full">
+                          <Clock className="h-4 w-4 mr-1 text-blue-500" />
+                          <span>Estimated: {step.estimated_time}</span>
+                        </div>
+                      )}
+                      
+                      <div className="flex gap-2">
+                        <Button
+                          variant={step.status === 'pending' ? 'secondary' : 'outline'}
+                          size="sm"
+                          onClick={() => updateStepStatus(step.id, 'pending')}
+                          disabled={savingProgress === step.id}
+                          className="text-sm"
+                        >
+                          Not Started
+                        </Button>
+                        <Button
+                          variant={step.status === 'in_progress' ? 'secondary' : 'outline'}
+                          size="sm"
+                          onClick={() => updateStepStatus(step.id, 'in_progress')}
+                          disabled={savingProgress === step.id}
+                          className="text-sm"
+                        >
+                          In Progress
+                        </Button>
+                        <Button
+                          variant={step.status === 'completed' ? 'secondary' : 'outline'}
+                          size="sm"
+                          onClick={() => updateStepStatus(step.id, 'completed')}
+                          disabled={savingProgress === step.id}
+                          className="text-sm flex items-center gap-1"
+                        >
+                          {step.status === 'completed' && <CheckCircle2 className="h-3 w-3" />}
+                          Completed
+                        </Button>
+                      </div>
+                    </div>
+                    
+                    <Separator className="my-4" />
+                    
+                    <div className="bg-gray-50 dark:bg-gray-800/50 p-4 rounded-lg">
+                      <div className="flex items-center gap-2 mb-2">
+                        <PenLine className="h-4 w-4 text-gray-500" />
+                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Your Notes</span>
+                      </div>
+                      <textarea
+                        value={step.notes || ''}
+                        onChange={(e) => {
+                          const updatedSteps = steps.map(s => 
+                            s.id === step.id ? { ...s, notes: e.target.value } : s
+                          );
+                          setSteps(updatedSteps);
+                        }}
+                        onBlur={(e) => updateStepNotes(step.id, e.target.value)}
+                        placeholder="Add your notes here..."
+                        className="w-full p-3 border rounded-md text-sm min-h-24 bg-white dark:bg-gray-700 border-gray-200 dark:border-gray-600 focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition-colors duration-200"
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
