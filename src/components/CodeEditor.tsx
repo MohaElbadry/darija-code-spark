@@ -45,11 +45,11 @@ const CodeEditor: React.FC = () => {
           {activeTab === 'javascript' && (
             <pre className="text-left">
               <code>
-                <span className="text-green-400">// Your code here function sayHello() { console.log("مرحبا بالعالم"); }</span>
+                <span className="text-green-400">// Your code here</span>
                 {"\n"}
                 <span className="text-blue-400">function</span> <span className="text-yellow-400">sayHello</span>() {"{"}
                 {"\n  "}<span className="text-blue-400">console</span>.<span className="text-yellow-400">log</span>(<span className="text-green-400">"مرحبا بالعالم"</span>);
-                {"\n}"}
+                {"\n"}{"}"} 
               </code>
             </pre>
           )}
@@ -82,7 +82,7 @@ const CodeEditor: React.FC = () => {
                 {"\n"}<span className="text-yellow-400">h1</span> {"{"}
                 {"\n  "}<span className="text-blue-400">color</span>: <span className="text-green-400">#e32845</span>;
                 {"\n  "}<span className="text-blue-400">text-align</span>: <span className="text-green-400">center</span>;
-                {"\n"}{"}"}
+                {"\n"}{"}"} 
               </code>
             </pre>
           )}
