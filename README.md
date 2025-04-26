@@ -49,10 +49,10 @@ npm start
 
 | Name           | Role              | Socials |
 |----------------|-------------------|---------|
-| [mohammed el badry]   | Cloud Computing Engineer | [LinkedIn](#) / [GitHub](#https://github.com/MohaElbadry/darija-code-spark) |
-| [yasser namez]        | Cybersecurity Engineer | [LinkedIn](#) / [GitHub](#) |
-| [ibtissam benabid]    | Cybersecurity Engineer | [LinkedIn](#) / [GitHub](#) |
-| [iyass grid]          | Software Engineer | [LinkedIn](#) / [GitHub](#) |
+| [mohammed el badry]   | Cloud Computing Engineer | [LinkedIn](#https://www.linkedin.com/in/mohammed-elbadry/) / [GitHub](#https://github.com/MohaElbadry) |
+| [yasser namez]        | Cybersecurity Engineer | [LinkedIn](#https://www.linkedin.com/in/yasser-namez-0898a322b/) / [GitHub](#https://github.com/yassernamez03) |
+| [ibtissam benabid]    | Cybersecurity Engineer | [LinkedIn](#https://www.linkedin.com/in/ibtissam-benabid/) / [GitHub](#https://github.com/BenabidIbtissam) |
+| [iyas grid]          | Software Engineer | [LinkedIn](#https://www.linkedin.com/in/ilyas-grid/) / [GitHub](#https://github.com/IlyasGrid) |
 
 > *(Update the names and links to your real team members!)*
 
