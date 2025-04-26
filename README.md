@@ -47,13 +47,12 @@ npm start
 
 ## 👥 Team
 
-| Name           | Role              | Socials |
-|----------------|-------------------|---------|
-| [mohammed el badry]   | Cloud Computing Engineer | [LinkedIn](#https://www.linkedin.com/in/mohammed-elbadry/) / [GitHub](#https://github.com/MohaElbadry) |
-| [yasser namez]        | Cybersecurity Engineer | [LinkedIn](#https://www.linkedin.com/in/yasser-namez-0898a322b/) / [GitHub](#https://github.com/yassernamez03) |
-| [ibtissam benabid]    | Cybersecurity Engineer | [LinkedIn](#https://www.linkedin.com/in/ibtissam-benabid/) / [GitHub](#https://github.com/BenabidIbtissam) |
-| [iyas grid]          | Software Engineer | [LinkedIn](#https://www.linkedin.com/in/ilyas-grid/) / [GitHub](#https://github.com/IlyasGrid) |
-
+| Name              | Role                      | Socials |
+|-------------------|---------------------------|---------|
+| Mohammed El Badry | Cloud Computing Engineer  | [LinkedIn](https://www.linkedin.com/in/mohammed-elbadry/) / [GitHub](https://github.com/MohaElbadry) |
+| Yasser Namez      | Cybersecurity Engineer    | [LinkedIn](https://www.linkedin.com/in/yasser-namez-0898a322b/) / [GitHub](https://github.com/yassernamez03) |
+| Ibtissam Benabid  | Cybersecurity Engineer    | [LinkedIn](https://www.linkedin.com/in/ibtissam-benabid/) / [GitHub](https://github.com/BenabidIbtissam) |
+| Iyas Grid         | Software Engineer         | [LinkedIn](https://www.linkedin.com/in/ilyas-grid/) / [GitHub](https://github.com/IlyasGrid) |
 
 ---
 
