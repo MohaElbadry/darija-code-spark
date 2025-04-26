@@ -1,7 +1,6 @@
-
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 
-type Language = 'ar' | 'en' | 'fr' | 'darija';
+type Language = 'english' | 'arabic' | 'french' | 'darija';
 
 type LanguageContextType = {
   language: Language;
@@ -11,7 +10,7 @@ type LanguageContextType = {
 
 // Translations
 const translations: Record<Language, Record<string, string>> = {
-  en: {
+  english: {
     'app.title': 'DarijaCode Hub',
     'nav.home': 'Home',
     'nav.learn': 'Learn',
@@ -40,7 +39,7 @@ const translations: Record<Language, Record<string, string>> = {
     'editor.css': 'CSS',
     'editor.js': 'JavaScript',
   },
-  ar: {
+  arabic: {
     'app.title': 'دريجة كود هب',
     'nav.home': 'الرئيسية',
     'nav.learn': 'تعلم',
@@ -69,7 +68,7 @@ const translations: Record<Language, Record<string, string>> = {
     'editor.css': 'CSS',
     'editor.js': 'جافاسكريبت',
   },
-  fr: {
+  french: {
     'app.title': 'DarijaCode Hub',
     'nav.home': 'Accueil',
     'nav.learn': 'Apprendre',
@@ -132,10 +131,29 @@ const translations: Record<Language, Record<string, string>> = {
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
 export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [language, setLanguage] = useState<Language>('ar');
+  const [language, setLanguage] = useState<Language>('english');
 
   const t = (key: string): string => {
-    return translations[language][key] || key;
+    // Handle missing languages gracefully
+    if (!translations[language]) {
+      console.warn(`Missing language: ${language}`);
+      return key;
+    }
+    
+    // Handle missing translation keys gracefully
+    const translatedText = translations[language][key];
+    if (!translatedText) {
+      console.warn(`Missing translation key: ${key} for language: ${language}`);
+      
+      // Try to find the key in English as fallback
+      if (language !== 'english' && translations['english'] && translations['english'][key]) {
+        return translations['english'][key];
+      }
+      
+      return key;
+    }
+    
+    return translatedText;
   };
 
   return (

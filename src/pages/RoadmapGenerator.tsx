@@ -96,13 +96,22 @@ const RoadmapGeneratorContent: React.FC = () => {
     try {
       console.log("Generating roadmap with preferences:", { pathName: path.name, level, language });
       
+      // Enhanced prompt to ensure better descriptions and time estimates
+      const enhancedPrompt = customPrompt || 
+        `Create a detailed roadmap for ${path.name} at ${level} level in ${language}. 
+        For each step:
+        1. Provide a descriptive title
+        2. Include a detailed description (at least 2-3 sentences) explaining what to learn and why it's important
+        3. Add a realistic estimated time (e.g., "2 hours", "3 days") for each step
+        4. Include 2-3 relevant keywords`;
+      
       // ** Backend Call - Updated to call Supabase Function **
       const response = await supabase.functions.invoke('generate-roadmap', {
         body: JSON.stringify({
           pathName: path.name,
           level,
           language,
-          customPrompt, 
+          customPrompt: enhancedPrompt, 
         }),
       });
 
@@ -122,9 +131,17 @@ const RoadmapGeneratorContent: React.FC = () => {
         throw new Error("Generated roadmap was empty or invalid.");
       }
 
+      // Ensure each step has a description and estimated time
+      const completeSteps = data.steps.map((step, index) => ({
+        ...step,
+        description: step.description || `This step focuses on learning ${step.title}. Take your time to understand the concepts thoroughly.`,
+        estimated_time: step.estimated_time || (level === 'beginner' ? '1-2 hours' : level === 'intermediate' ? '3-4 hours' : '5-6 hours'),
+        keywords: step.keywords || [`${path.name}`, `${level}`],
+      }));
+
       setRoadmapTitle(data.title || roadmapTitle); 
       setRoadmapDescription(data.description || roadmapDescription); 
-      setSteps(data.steps);
+      setSteps(completeSteps);
       setRoadmapId(null); 
       
       toast({
@@ -165,7 +182,7 @@ const RoadmapGeneratorContent: React.FC = () => {
           description: roadmapDescription,
           level,
           language,
-          ai_generated: true, 
+          ai_generated: true,
         })
         .select()
         .single();

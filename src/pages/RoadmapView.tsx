@@ -35,6 +35,23 @@ type Roadmap = {
   path_name?: string;
 };
 
+const stripMarkdown = (text: string) => {
+  if (!text) return '';
+  // Replace markdown headings, bold, italic, links, code blocks, and lists with plain text
+  return text
+    .replace(/#{1,6}\s/g, '') // Remove headings
+    .replace(/\*\*(.*?)\*\*/g, '$1') // Remove bold
+    .replace(/\*(.*?)\*/g, '$1') // Remove italic
+    .replace(/\_\_(.*?)\_\_/g, '$1') // Remove underscores bold
+    .replace(/\_(.*?)\_/g, '$1') // Remove underscores italic
+    .replace(/\[(.*?)\]\((.*?)\)/g, '$1') // Replace links with just text
+    .replace(/`{1,3}([\s\S]*?)`{1,3}/g, '$1') // Remove code blocks
+    .replace(/^\s*[-*+]\s/gm, '• ') // Replace bullet lists with simple bullet points
+    .replace(/^\s*\d+\.\s/gm, '$1. ') // Keep numbered lists
+    .replace(/\n\s*\n/g, '\n\n') // Normalize line breaks
+    .trim(); // Remove extra whitespace
+};
+
 const RoadmapViewContent: React.FC = () => {
   const { t } = useLanguage();
   const { id } = useParams<{ id: string }>();
@@ -360,13 +377,27 @@ const RoadmapViewContent: React.FC = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-gray-600 mb-4">{step.description}</p>
+                <p className="text-gray-600 mb-4 whitespace-pre-line font-normal leading-relaxed">
+                  {stripMarkdown(step.description)}
+                </p>
                 
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center text-gray-500 text-sm">
-                    <Clock className="h-4 w-4 mr-1" />
-                    <span>Estimated: {step.estimated_time}</span>
-                  </div>
+                <div className="flex flex-wrap items-center gap-3 mb-3">
+                  {step.keywords && step.keywords.length > 0 && 
+                    step.keywords.map((keyword, kidx) => (
+                      <Badge key={kidx} variant="outline" className="bg-gray-50">
+                        {keyword}
+                      </Badge>
+                    ))
+                  }
+                </div>
+                
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
+                  {step.estimated_time && (
+                    <div className="flex items-center text-gray-700 text-sm font-medium bg-gray-100 px-3 py-1 rounded-full">
+                      <Clock className="h-4 w-4 mr-1 text-darija-primary" />
+                      <span>Estimated: {step.estimated_time}</span>
+                    </div>
+                  )}
                   
                   <div className="flex gap-2">
                     <Button

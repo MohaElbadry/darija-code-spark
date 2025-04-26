@@ -10,6 +10,7 @@ import NotFound from "./pages/NotFound";
 import LearningSetup from "./pages/LearningSetup";
 import RoadmapGenerator from "./pages/RoadmapGenerator";
 import RoadmapView from "./pages/RoadmapView";
+import Assistant from "./pages/Assistant";
 
 const queryClient = new QueryClient();
 
@@ -26,6 +27,7 @@ const App = () => (
           <Route path="/learning-setup" element={<LearningSetup />} />
           <Route path="/roadmap/generate" element={<RoadmapGenerator />} />
           <Route path="/roadmap/:id" element={<RoadmapView />} />
+          <Route path="/assistant" element={<Assistant />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
