@@ -18,12 +18,14 @@ import {
   DropdownMenuSubContent,
   DropdownMenuSeparator,
 } from "./ui/dropdown-menu";
+import Learning from '@/pages/Learning';
 
 // Translations for navbar items
 const translations = {
   english: {
     home: "Home",
-    learn: "Learn",
+    learning: "Learning",
+    learn: "Learning Path",
     aiAssistant: "AI Assistant",
     coffeeAndCode: "Coffee and Code",
     projects: "Projects",
@@ -195,6 +197,10 @@ const Navbar: React.FC = () => {
             <Button variant="ghost" size="sm" className="flex items-center gap-1.5" onClick={() => navigate('/')}>
               <Home className="h-4 w-4" />
               {t('home')}
+            </Button>
+            <Button variant="ghost" size="sm" className="flex items-center gap-1.5" onClick={() => navigate('/learning')}>
+              <BookOpen className="h-4 w-4" />
+              {t('learning')}
             </Button>
             <Button variant="ghost" size="sm" className="flex items-center gap-1.5" onClick={() => navigate('/learning-setup')}>
               <BookOpen className="h-4 w-4" />

@@ -18,7 +18,7 @@ import Projects from "./pages/Projects";
 import Community from "./pages/Community";
 import Navbar from "./components/Navbar";
 import Settings from "./pages/Settings";
-
+import Learning from "./pages/Learning";
 const queryClient = new QueryClient();
 
 // Layout component that includes the Navbar
@@ -45,6 +45,7 @@ const App = () => (
               <Route element={<Layout />}>
                 <Route path="/" element={<Index />} />
                 <Route path="/profile" element={<Profile />} />
+                <Route path="learning" element={<Learning />} />
                 <Route path="/learning-setup" element={<LearningSetup />} />
                 <Route path="/roadmap/generate" element={<RoadmapGenerator />} />
                 <Route path="/roadmap/:id" element={<RoadmapView />} />
