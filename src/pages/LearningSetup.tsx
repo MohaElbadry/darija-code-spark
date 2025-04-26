@@ -118,7 +118,15 @@ const LearningSetupContent: React.FC = () => {
       console.log('Preferences saved, navigating to roadmap generator');
 
       // Navigate to roadmap page with the selected learning path
-      navigate(`/roadmap/generate?path=${pathId}&level=${level}&language=${language}`);
+      const urlParams = new URLSearchParams({
+        path: pathId,
+        level: level,
+        language: language
+      });
+      if (goal) {
+        urlParams.set('goal', goal);
+      }
+      navigate(`/roadmap/generate?${urlParams.toString()}`);
     } catch (error) {
       console.error('Error saving preferences:', error);
       setError('Failed to save your preferences. Please try again.');

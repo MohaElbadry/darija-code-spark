@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
-import { Mic, Send, Maximize2, Loader2, MessageSquare, SendHorizontal } from 'lucide-react';
+import { Mic, Send, Maximize2, Loader2, MessageSquare, SendHorizontal, Globe } from 'lucide-react';
 
 // UI Components
 import { Input } from './ui/input';
@@ -8,6 +8,7 @@ import { Button } from './ui/button';
 import { Textarea } from './ui/textarea';
 import { Card } from './ui/card';
 import { Avatar } from './ui/avatar';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 
 // Supabase client
 import { supabase } from '../integrations/supabase/client';
@@ -28,16 +29,22 @@ const languageOptions = [
   { value: 'english', label: 'English' },
 ];
 
+type AILanguage = 'english' | 'arabic' | 'french' | 'darija';
+
 const AIAssistant: React.FC = () => {
   const { t, language } = useLanguage();
   const isRtl = language === 'arabic' || language === 'darija';
+  
+  // Separate language state for AI responses
+  const [aiLanguage, setAILanguage] = useState<AILanguage>('darija');
+  
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
       role: 'assistant',
-      content: language === 'darija' ? 'مرحبا، كيفاش نقدر نعاونك اليوم؟' : 
-               language === 'arabic' ? 'مرحبا كيف يمكنني مساعدتك اليوم؟' : 
-               language === 'french' ? 'Bonjour, comment puis-je vous aider aujourd\'hui ?' : 
+      content: aiLanguage === 'darija' ? 'مرحبا، كيفاش نقدر نعاونك اليوم؟' : 
+               aiLanguage === 'arabic' ? 'مرحبا كيف يمكنني مساعدتك اليوم؟' : 
+               aiLanguage === 'french' ? 'Bonjour, comment puis-je vous aider aujourd\'hui ?' : 
                'Hello, how can I help you today?',
       timestamp: new Date()
     }
@@ -46,6 +53,22 @@ const AIAssistant: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [chatHistory, setChatHistory] = useState<Message[]>([]);
+
+  // Update welcome message when AI language changes
+  useEffect(() => {
+    // Reset chat with new welcome message when language changes
+    setMessages([
+      {
+        id: '1',
+        role: 'assistant',
+        content: aiLanguage === 'darija' ? 'مرحبا، كيفاش نقدر نعاونك اليوم؟' : 
+                 aiLanguage === 'arabic' ? 'مرحبا كيف يمكنني مساعدتك اليوم؟' : 
+                 aiLanguage === 'french' ? 'Bonjour, comment puis-je vous aider aujourd\'hui ?' : 
+                 'Hello, how can I help you today?',
+        timestamp: new Date()
+      }
+    ]);
+  }, [aiLanguage]);
 
   // Scroll to bottom of messages whenever messages change
   useEffect(() => {
@@ -84,7 +107,7 @@ const AIAssistant: React.FC = () => {
       const { data, error } = await supabase.functions.invoke('ai-assistant', {
         body: {
           message: input,
-          language,
+          language: aiLanguage, // Use AI-specific language
           chatHistory: messages.map(m => ({ role: m.role, content: m.content })),
         },
       });
@@ -92,7 +115,7 @@ const AIAssistant: React.FC = () => {
       if (error) throw error;
 
       // If we don't have a proper response, use a fallback
-      let responseText = data?.reply || getFallbackResponse(language);
+      let responseText = data?.reply || getFallbackResponse(aiLanguage);
 
       // Add assistant message to chat
       const assistantMessage: Message = {
@@ -110,7 +133,7 @@ const AIAssistant: React.FC = () => {
       const errorMessage: Message = {
         id: generateUniqueId(),
         role: 'assistant',
-        content: getErrorMessage(language),
+        content: getErrorMessage(aiLanguage),
         timestamp: new Date()
       };
       
@@ -161,9 +184,30 @@ const AIAssistant: React.FC = () => {
 
   return (
     <div className="flex flex-col h-full max-w-3xl mx-auto p-4">
-      <div className="flex items-center gap-2 mb-4">
-        <MessageSquare className="h-6 w-6" />
-        <h2 className="text-xl font-bold">المساعد الذكي</h2>
+      <div className="flex items-center justify-between gap-2 mb-4">
+        <div className="flex items-center gap-2">
+          <MessageSquare className="h-6 w-6" />
+          <h2 className="text-xl font-bold">المساعد الذكي</h2>
+        </div>
+        
+        <div className="flex items-center gap-2">
+          <Globe className="h-4 w-4 text-muted-foreground" />
+          <Select
+            value={aiLanguage}
+            onValueChange={(value) => setAILanguage(value as AILanguage)}
+          >
+            <SelectTrigger className="w-[130px]">
+              <SelectValue placeholder="Select language" />
+            </SelectTrigger>
+            <SelectContent>
+              {languageOptions.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       <Card className="flex-1 overflow-auto mb-4 p-4">
@@ -215,7 +259,10 @@ const AIAssistant: React.FC = () => {
         <Textarea
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          placeholder="اكتب سؤالك هنا..."
+          placeholder={aiLanguage === 'darija' ? 'كتب سؤالك هنا...' : 
+                       aiLanguage === 'arabic' ? 'اكتب سؤالك هنا...' : 
+                       aiLanguage === 'french' ? 'Écrivez votre question ici...' :
+                       'Type your question here...'}
           className="flex-1 resize-none"
           rows={2}
           disabled={isLoading}

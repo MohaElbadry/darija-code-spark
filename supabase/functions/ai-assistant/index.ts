@@ -18,6 +18,8 @@ function getSystemPrompt(language: string): string {
         يجب عليك الإجابة على أسئلة المستخدمين حول البرمجة بالدارجة المغربية.
         إذا كان هناك مصطلحات تقنية لا يوجد لها ترجمة مباشرة في الدارجة، فاستخدم المصطلح الإنجليزي مع شرح بسيط.
         كن مشجعا، صبورا، وداعما للمستخدمين على مختلف مستويات المهارة.
+        عندما يُطلب منك تقديم خيارات متعددة، اكتب الإجابات بدون استخدام علامات النجمة أو الشرطات أو أي علامات تنسيق.
+        قم دائمًا بإعطاء الإجابة مباشرة دون استخدام رموز التنسيق.
       `;
     case 'arabic':
       return `
@@ -25,6 +27,8 @@ function getSystemPrompt(language: string): string {
         يجب عليك الإجابة على أسئلة المستخدمين حول البرمجة بالعربية.
         إذا كان هناك مصطلحات تقنية لا يوجد لها ترجمة مباشرة في العربية، فاستخدم المصطلح الإنجليزي مع شرح بسيط.
         كن مشجعا، صبورا، وداعما للمستخدمين على مختلف مستويات المهارة.
+        عندما يُطلب منك تقديم خيارات متعددة، اكتب الإجابات بدون استخدام علامات النجمة أو الشرطات أو أي علامات تنسيق.
+        قم دائمًا بإعطاء الإجابة مباشرة دون استخدام رموز التنسيق.
       `;
     case 'french':
       return `
@@ -32,14 +36,32 @@ function getSystemPrompt(language: string): string {
         Vous devez répondre aux questions des utilisateurs sur la programmation en français.
         S'il y a des termes techniques qui n'ont pas de traduction directe en français, utilisez le terme anglais avec une brève explication.
         Soyez encourageant, patient et solidaire des utilisateurs de tous niveaux de compétence.
+        Lorsqu'on vous demande de fournir plusieurs options, écrivez les réponses sans utiliser d'astérisques, de tirets ou d'autres marques de formatage.
+        Donnez toujours la réponse directement sans utiliser de symboles de formatage.
       `;
     default: // English
       return `
         You are an intelligent and friendly assistant specialized in programming. Your mission is to help users learn programming in English.
         You should answer users' questions about programming in English.
         Be encouraging, patient, and supportive of users of all skill levels.
+        When asked to provide multiple options, write the answers without using asterisks, bullets, or any formatting marks.
+        Always give the answer directly without using formatting symbols.
       `;
   }
+}
+
+// Function to clean response text from markdown formatting
+function cleanResponseText(text: string): string {
+  // Remove markdown asterisks (bold/italic formatting)
+  let cleaned = text.replace(/\*\*?(.*?)\*\*?/g, '$1');
+  
+  // Remove markdown bullet points
+  cleaned = cleaned.replace(/^\s*[\*\-]\s+/gm, '');
+  
+  // Remove backticks used for code formatting
+  cleaned = cleaned.replace(/`([^`]+)`/g, '$1');
+  
+  return cleaned;
 }
 
 // --- Edge Function Handler ---
@@ -156,10 +178,13 @@ serve(async (req) => {
       });
     }
 
+    // Clean the response text to remove markdown formatting
+    const cleanedText = cleanResponseText(generatedText);
+
     // 5. Return the response
     return new Response(
       JSON.stringify({ 
-        reply: generatedText,
+        reply: cleanedText,
         model: GEMINI_MODEL
       }),
       {
