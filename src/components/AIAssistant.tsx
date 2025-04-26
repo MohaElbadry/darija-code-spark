@@ -1,14 +1,15 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useLanguage } from '../contexts/LanguageContext';
-import { Mic, Send, Maximize2, Loader2, MessageSquare, SendHorizontal, Globe } from 'lucide-react';
+import { Mic, Send, Maximize2, Loader2, MessageSquare, SendHorizontal, Bot, User, Sparkles, Image, MicOff } from 'lucide-react';
+import { Avatar, AvatarImage, AvatarFallback } from './ui/avatar';
+
 
 // UI Components
 import { Input } from './ui/input';
 import { Button } from './ui/button';
 import { Textarea } from './ui/textarea';
 import { Card } from './ui/card';
-import { Avatar } from './ui/avatar';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
+
 
 // Supabase client
 import { supabase } from '../integrations/supabase/client';
@@ -51,6 +52,9 @@ const AIAssistant: React.FC = () => {
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [chatHistory, setChatHistory] = useState<Message[]>([]);
 
@@ -87,8 +91,27 @@ const AIAssistant: React.FC = () => {
     return Date.now().toString(36) + Math.random().toString(36).substr(2);
   };
 
+  const handleVoiceInput = () => {
+    if (!isListening) {
+      // Start voice recognition
+      setIsListening(true);
+      // TODO: Implement actual voice recognition
+      alert('Voice recognition is not implemented yet.');
+    } else {
+      // Stop voice recognition
+      setIsListening(false);
+    }
+  };
+
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setSelectedImage(file);
+    }
+  };
+
   const handleSendMessage = async () => {
-    if (!input.trim()) return;
+    if (!input.trim() && !selectedImage) return;
     
     // Add user message to chat
     const userMessage: Message = {
@@ -100,6 +123,7 @@ const AIAssistant: React.FC = () => {
     
     setMessages(prev => [...prev, userMessage]);
     setInput('');
+    setSelectedImage(null);
     setIsLoading(true);
 
     try {
@@ -109,6 +133,7 @@ const AIAssistant: React.FC = () => {
           message: input,
           language: aiLanguage, // Use AI-specific language
           chatHistory: messages.map(m => ({ role: m.role, content: m.content })),
+          image: selectedImage ? await convertImageToBase64(selectedImage) : null,
         },
       });
 
@@ -141,6 +166,15 @@ const AIAssistant: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const convertImageToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = error => reject(error);
+    });
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -177,44 +211,35 @@ const AIAssistant: React.FC = () => {
     }
   };
 
-  // Mock speech recognition function
-  const handleVoiceInput = () => {
-    alert('Voice input is not implemented yet.');
-  };
-
   return (
-    <div className="flex flex-col h-full max-w-3xl mx-auto p-4">
-      <div className="flex items-center justify-between gap-2 mb-4">
-        <div className="flex items-center gap-2">
-          <MessageSquare className="h-6 w-6" />
-          <h2 className="text-xl font-bold">المساعد الذكي</h2>
+    <div className="flex flex-col h-full max-w-3xl mx-auto p-4 bg-gradient-to-br from-background/50 to-muted/20 rounded-lg">
+      <div className="flex items-center gap-3 mb-4 p-3 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-lg shadow-sm">
+        <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-full animate-pulse">
+          <Sparkles className="h-6 w-6 text-blue-600 dark:text-blue-400" />
         </div>
-        
-        <div className="flex items-center gap-2">
-          <Globe className="h-4 w-4 text-muted-foreground" />
-          <Select
-            value={aiLanguage}
-            onValueChange={(value) => setAILanguage(value as AILanguage)}
-          >
-            <SelectTrigger className="w-[130px]">
-              <SelectValue placeholder="Select language" />
-            </SelectTrigger>
-            <SelectContent>
-              {languageOptions.map((option) => (
-                <SelectItem key={option.value} value={option.value}>
-                  {option.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+        <h2 className="text-xl font-bold flex items-center gap-2 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+          <Bot className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+          {language === 'darija' ? 'المساعد الذكي' : 
+           language === 'arabic' ? 'المساعد الذكي' : 
+           language === 'french' ? 'Assistant IA' : 
+           'AI Assistant'}
+        </h2>
+
       </div>
 
-      <Card className="flex-1 overflow-auto mb-4 p-4">
+      <Card className="flex-1 overflow-auto mb-4 p-4 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm shadow-lg">
         <div className="flex flex-col gap-4">
           {messages.length === 0 ? (
-            <div className="text-center text-muted-foreground py-8">
-              أهلا! أنا هنا لمساعدتك في تعلم البرمجة. ما هو سؤالك؟
+            <div className="text-center text-muted-foreground py-8 flex flex-col items-center gap-2">
+              <div className="p-4 bg-blue-100 dark:bg-blue-900/20 rounded-full animate-bounce">
+                <Sparkles className="h-8 w-8 text-blue-600 dark:text-blue-400" />
+              </div>
+              <p className="text-lg font-medium">
+                {language === 'darija' ? 'أهلا! أنا هنا لمساعدتك في تعلم البرمجة. ما هو سؤالك؟' :
+                 language === 'arabic' ? 'أهلا! أنا هنا لمساعدتك في تعلم البرمجة. ما هو سؤالك؟' :
+                 language === 'french' ? 'Bonjour! Je suis là pour vous aider à apprendre la programmation. Quelle est votre question?' :
+                 'Hello! I\'m here to help you learn programming. What\'s your question?'}
+              </p>
             </div>
           ) : (
             messages.map((msg, index) => (
@@ -225,24 +250,32 @@ const AIAssistant: React.FC = () => {
                 }`}
               >
                 {msg.role === 'assistant' && (
-                  <Avatar>
-                    <MessageSquare className="h-5 w-5" />
-                  </Avatar>
+                  <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-full shadow-sm">
+                    <Bot className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                  </div>
                 )}
                 <div
-                  className={`rounded-lg p-3 max-w-[80%] ${
+                  className={`rounded-lg p-3 max-w-[80%] shadow-sm transition-all duration-200 hover:shadow-md ${
                     msg.role === 'assistant'
-                      ? 'bg-muted'
-                      : 'bg-primary text-primary-foreground'
+                      ? 'bg-blue-50 dark:bg-blue-900/20 text-blue-900 dark:text-blue-100'
+                      : 'bg-purple-600 text-white'
                   }`}
                 >
                   <p className="whitespace-pre-wrap">{msg.content}</p>
+                  <span className={`text-xs mt-1 block ${
+                    msg.role === 'assistant' 
+                      ? 'text-blue-600/70 dark:text-blue-400/70' 
+                      : 'text-purple-200/70'
+                  }`}>
+                    {msg.timestamp.toLocaleTimeString()}
+                  </span>
                 </div>
                 {msg.role === 'user' && (
-                  <Avatar>
-                    <div className="bg-primary text-primary-foreground rounded-full h-full w-full flex items-center justify-center">
-                      U
-                    </div>
+                  <Avatar className="h-8 w-8 border-2 border-purple-500 shadow-sm hover:shadow-md transition-all duration-200">
+                    <AvatarImage src="/default-avatar.png" />
+                    <AvatarFallback className="bg-purple-500 text-white">
+                      <User className="h-4 w-4" />
+                    </AvatarFallback>
                   </Avatar>
                 )}
               </div>
@@ -255,15 +288,34 @@ const AIAssistant: React.FC = () => {
       <form onSubmit={(e) => {
         e.preventDefault();
         handleSendMessage();
-      }} className="flex gap-2">
+      }} className="flex gap-2 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm p-3 rounded-lg shadow-lg border border-gray-200/50 dark:border-gray-700/50">
+        <input
+          type="file"
+          ref={fileInputRef}
+          onChange={handleImageSelect}
+          accept="image/*"
+          className="hidden"
+        />
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          onClick={() => fileInputRef.current?.click()}
+          className="hover:bg-purple-100 dark:hover:bg-purple-900/30"
+        >
+          <Image className="h-4 w-4 text-purple-600" />
+        </Button>
         <Textarea
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          placeholder={aiLanguage === 'darija' ? 'كتب سؤالك هنا...' : 
-                       aiLanguage === 'arabic' ? 'اكتب سؤالك هنا...' : 
-                       aiLanguage === 'french' ? 'Écrivez votre question ici...' :
-                       'Type your question here...'}
-          className="flex-1 resize-none"
+          placeholder={
+            language === 'darija' ? 'اكتب سؤالك هنا...' :
+            language === 'arabic' ? 'اكتب سؤالك هنا...' :
+            language === 'french' ? 'Écrivez votre question ici...' :
+            'Type your question here...'
+          }
+          className="flex-1 resize-none bg-white/50 dark:bg-gray-800/50 border-none focus:ring-2 focus:ring-purple-500/20"
+
           rows={2}
           disabled={isLoading}
           onKeyDown={(e) => {
@@ -273,14 +325,52 @@ const AIAssistant: React.FC = () => {
             }
           }}
         />
-        <Button type="submit" disabled={isLoading || !input.trim()}>
-          {isLoading ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <SendHorizontal className="h-4 w-4" />
-          )}
-        </Button>
+        <div className="flex gap-1">
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            onClick={handleVoiceInput}
+            className={`hover:bg-purple-100 dark:hover:bg-purple-900/30 ${
+              isListening ? 'text-red-500' : 'text-purple-600'
+            }`}
+          >
+            {isListening ? (
+              <MicOff className="h-4 w-4 animate-pulse" />
+            ) : (
+              <Mic className="h-4 w-4" />
+            )}
+          </Button>
+          <Button 
+            type="submit" 
+            disabled={isLoading || (!input.trim() && !selectedImage)}
+            className="bg-purple-600 hover:bg-purple-700 shadow-sm hover:shadow-md transition-all duration-200"
+          >
+            {isLoading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <SendHorizontal className="h-4 w-4" />
+            )}
+          </Button>
+        </div>
       </form>
+      {selectedImage && (
+        <div className="mt-2 flex items-center gap-2 bg-white/50 dark:bg-gray-800/50 p-2 rounded-lg">
+          <Image className="h-4 w-4 text-purple-600" />
+          <span className="text-sm text-gray-600 dark:text-gray-300 truncate">
+            {selectedImage.name}
+          </span>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            onClick={() => setSelectedImage(null)}
+            className="ml-auto h-6 w-6 hover:bg-red-100 dark:hover:bg-red-900/30"
+          >
+            <span className="text-red-500">×</span>
+          </Button>
+        </div>
+      )}
     </div>
   );
 };

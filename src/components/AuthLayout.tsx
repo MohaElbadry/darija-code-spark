@@ -1,5 +1,6 @@
 
 import { ReactNode } from 'react';
+import logo from '../assets/logo.png';
 
 export default function AuthLayout({ children }: { children: ReactNode }) {
   return (
@@ -7,7 +8,7 @@ export default function AuthLayout({ children }: { children: ReactNode }) {
       <div className="max-w-md w-full space-y-8">
         <div className="text-center">
           <img
-            src="/lovable-uploads/c1a690d0-2bbc-48da-acef-49803b92983e.png"
+            src={logo}
             alt="DarijaCode Hub Logo"
             className="mx-auto h-12 w-auto"
           />
