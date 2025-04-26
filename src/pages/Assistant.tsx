@@ -1,8 +1,10 @@
 import React from 'react';
 import AIAssistant from '../components/AIAssistant';
-import { LanguageProvider } from '../contexts/LanguageContext';
+import { useLanguage } from '../contexts/LanguageContext';
 
 const Assistant: React.FC = () => {
+  const { t } = useLanguage();
+  
   return (
     <LanguageProvider>
       <div className="min-h-screen flex flex-col bg-gradient-to-b from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
@@ -15,6 +17,7 @@ const Assistant: React.FC = () => {
         </main>
       </div>
     </LanguageProvider>
+
   );
 };
 

@@ -24,34 +24,59 @@ type RoadmapStep = {
 };
 
 const RoadmapGeneratorContent: React.FC = () => {
-  const { t } = useLanguage();
+  const { t, language: userLanguage } = useLanguage(); // Language for UI elements
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { toast } = useToast();
-  
+
+  // --- Preferences from URL ---
   const pathId = searchParams.get('path') || '';
   const level = searchParams.get('level') || '';
-  const language = searchParams.get('language') || '';
-  
-  const [loading, setLoading] = useState(true);
-  const [generating, setGenerating] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [path, setPath] = useState<any>(null);
+  const language = searchParams.get('language') || 'english'; // Language for roadmap content
+  const customPrompt = searchParams.get('goal') || ''; // Optional goal
+
+  // --- Component State ---
+  const [loading, setLoading] = useState(true); // Initial data loading
+  const [generating, setGenerating] = useState(false); // AI generation in progress
+  const [saving, setSaving] = useState(false); // Saving roadmap in progress
+  const [path, setPath] = useState<{ name: string; id: string; }>({ name: '', id: '' });
   const [roadmapTitle, setRoadmapTitle] = useState('');
   const [roadmapDescription, setRoadmapDescription] = useState('');
   const [steps, setSteps] = useState<RoadmapStep[]>([]);
-  const [customPrompt, setCustomPrompt] = useState('');
   const [roadmapId, setRoadmapId] = useState<string | null>(null);
+  const [apiError, setApiError] = useState<boolean>(false); // Track if AI generation failed
 
+  // --- Effects ---
+
+  // 1. Fetch Learning Path details when component mounts or pathId changes
   useEffect(() => {
     if (!pathId) {
+      console.warn('No pathId found in URL, redirecting to setup.');
       navigate('/learning-setup');
       return;
     }
+    console.log(`[Effect 1] pathId changed to: ${pathId}. Fetching path data...`);
     fetchPathData();
-  }, [pathId, navigate]);
+  }, [pathId, navigate]); // Rerun if pathId changes
 
+  // 2. Trigger initial roadmap generation *after* path data is successfully loaded
+  useEffect(() => {
+    // Only run if path has been loaded (id and name exist) AND steps haven't been loaded yet
+    if (path.id && path.name && steps.length === 0 && !loading && !generating) {
+      console.log(`[Effect 2] Path data loaded for '${path.name}'. Triggering initial roadmap generation...`);
+      generateRoadmap(); // Call the function that uses AI
+    }
+  }, [path, loading, generating]); // Rerun if path, loading, or generating status changes
+
+  // --- Data Fetching and Generation ---
+
+  // Fetches the details of the selected learning path
   const fetchPathData = async () => {
+    setLoading(true);
+    setPath({ name: '', id: '' }); // Reset path data
+    setSteps([]); // Clear existing steps
+    setApiError(false); // Reset error state
+    console.log(`Fetching details for path ID: ${pathId}`);
     try {
       const { data, error } = await supabase
         .from('learning_paths')
@@ -61,10 +86,14 @@ const RoadmapGeneratorContent: React.FC = () => {
 
       if (error) throw error;
       if (!data) {
+        console.error(`Learning path with ID ${pathId} not found.`);
+        toast({ title: 'Error', description: 'Learning path not found.', variant: 'destructive' });
         navigate('/learning-setup');
         return;
       }
 
+      console.log(`Successfully fetched path data: ${data.name}`);
+      // Set path state - the useEffect above will trigger generation
       setPath(data);
       
       const defaultTitle = t('roadmap.default_title', { 
@@ -90,16 +119,19 @@ const RoadmapGeneratorContent: React.FC = () => {
         variant: 'destructive',
       });
       setLoading(false);
+
     }
   };
 
+  // Generates the roadmap using the Supabase AI function
   const generateRoadmap = async () => {
     if (!path) {
       console.log("Path data not yet available for generation.");
       setLoading(false);
       return;
+
     }
-    
+
     setGenerating(true);
     setLoading(false);
     
@@ -134,7 +166,22 @@ const RoadmapGeneratorContent: React.FC = () => {
       if (!data || !data.steps || !Array.isArray(data.steps) || data.steps.length === 0) {
         console.warn("Generated roadmap has no steps or is invalid.");
         throw new Error(t('roadmap.error_empty'));
+
       }
+       if (data.steps.length === 0) {
+           // Check if it's the specific fallback response from the function
+           if (data.title === "Default Roadmap" || data.description?.includes("Could not parse AI response")) {
+                console.warn("AI function returned default/fallback roadmap.");
+                throw new Error("AI could not generate a roadmap. Using fallback.");
+           } else {
+               console.warn("AI generated an empty steps array.");
+               throw new Error("AI generated a roadmap with no steps.");
+           }
+      }
+      // --- End Response Validation ---
+
+
+      console.log(`AI function successful. Received ${data.steps.length} steps.`);
 
       const completeSteps = data.steps.map((step, index) => ({
         ...step,
@@ -153,28 +200,43 @@ const RoadmapGeneratorContent: React.FC = () => {
       toast({
         title: t('roadmap.generated'),
         description: t('roadmap.generated_description'),
+
       });
 
-    } catch (error: any) {
-      console.error('Error generating roadmap:', error);
+    } catch (error: unknown) {
+      console.error('Error during roadmap generation process:', error);
+      setApiError(true); // Set error flag
       toast({
         title: t('roadmap.error_generation'),
         description: error.message || t('roadmap.error_try_again'),
+
         variant: 'destructive',
       });
+      // Provide fallback steps if AI fails completely
+      setSteps(getDefaultSteps(path.name, level, language)); // Use static templates as fallback
+      setRoadmapTitle(`${path.name} - Fallback Roadmap`);
+      setRoadmapDescription(`Failed to generate AI roadmap. Using standard ${level} template.`);
+
     } finally {
-      setGenerating(false);
+      setGenerating(false); // Stop generating indicator
+      // Loading indicator for the page should have stopped in fetchPathData
     }
   };
 
-  const saveRoadmap = async () => {
-    setSaving(true);
-    
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        navigate('/auth');
-        return;
+  // --- Localization Helpers ---
+
+  // Gets a localized description string
+  const getLocalizedDescription = (pathName: string, userLevel: string, lang: string): string => {
+      // (Keep the existing implementation of this function)
+      switch(lang) {
+        case 'arabic':
+          return `خطة شاملة لتعلم ${pathName} بمستوى ${getArabicLevel(userLevel)} مصممة للمتحدثين باللغة العربية.`;
+        case 'darija':
+          return `خطة متكاملة باش تعلم ${pathName} ف المستوى ${getDarijaLevel(userLevel)} مخصصة للناس اللي كيهضرو بالدارجة.`;
+        case 'french':
+          return `Un plan d\'apprentissage complet pour ${pathName} au niveau ${getFrenchLevel(userLevel)}, adapté aux francophones.`;
+        default: // english
+          return `A comprehensive roadmap for learning ${pathName} at a ${userLevel} level, tailored for English speakers.`;
       }
       
       let roadmapRecord;
@@ -229,7 +291,17 @@ const RoadmapGeneratorContent: React.FC = () => {
       });
     } finally {
       setSaving(false);
+
     }
+
+    // Absolute fallback (should ideally not be reached if English is default)
+    return Array.from({ length: defaultStepCount }, (_, i) => ({
+         title: `Step ${i + 1}: Generic Title`,
+         description: 'Generic step description.',
+         order_index: i,
+         estimated_time: '2-4 weeks',
+         keywords: defaultKeywords
+     }));
   };
 
   if (loading) {
@@ -351,6 +423,7 @@ const RoadmapGeneratorContent: React.FC = () => {
       </div>
     </div>
   );
+
 };
 
 const RoadmapGenerator: React.FC = () => {

@@ -3,11 +3,13 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { Mic, Send, Maximize2, Loader2, MessageSquare, SendHorizontal, Bot, User, Sparkles, Image, MicOff } from 'lucide-react';
 import { Avatar, AvatarImage, AvatarFallback } from './ui/avatar';
 
+
 // UI Components
 import { Input } from './ui/input';
 import { Button } from './ui/button';
 import { Textarea } from './ui/textarea';
 import { Card } from './ui/card';
+
 
 // Supabase client
 import { supabase } from '../integrations/supabase/client';
@@ -28,16 +30,22 @@ const languageOptions = [
   { value: 'english', label: 'English' },
 ];
 
+type AILanguage = 'english' | 'arabic' | 'french' | 'darija';
+
 const AIAssistant: React.FC = () => {
   const { t, language } = useLanguage();
   const isRtl = language === 'arabic' || language === 'darija';
+  
+  // Separate language state for AI responses
+  const [aiLanguage, setAILanguage] = useState<AILanguage>('darija');
+  
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
       role: 'assistant',
-      content: language === 'darija' ? 'مرحبا، كيفاش نقدر نعاونك اليوم؟' : 
-               language === 'arabic' ? 'مرحبا كيف يمكنني مساعدتك اليوم؟' : 
-               language === 'french' ? 'Bonjour, comment puis-je vous aider aujourd\'hui ?' : 
+      content: aiLanguage === 'darija' ? 'مرحبا، كيفاش نقدر نعاونك اليوم؟' : 
+               aiLanguage === 'arabic' ? 'مرحبا كيف يمكنني مساعدتك اليوم؟' : 
+               aiLanguage === 'french' ? 'Bonjour, comment puis-je vous aider aujourd\'hui ?' : 
                'Hello, how can I help you today?',
       timestamp: new Date()
     }
@@ -49,6 +57,22 @@ const AIAssistant: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [chatHistory, setChatHistory] = useState<Message[]>([]);
+
+  // Update welcome message when AI language changes
+  useEffect(() => {
+    // Reset chat with new welcome message when language changes
+    setMessages([
+      {
+        id: '1',
+        role: 'assistant',
+        content: aiLanguage === 'darija' ? 'مرحبا، كيفاش نقدر نعاونك اليوم؟' : 
+                 aiLanguage === 'arabic' ? 'مرحبا كيف يمكنني مساعدتك اليوم؟' : 
+                 aiLanguage === 'french' ? 'Bonjour, comment puis-je vous aider aujourd\'hui ?' : 
+                 'Hello, how can I help you today?',
+        timestamp: new Date()
+      }
+    ]);
+  }, [aiLanguage]);
 
   // Scroll to bottom of messages whenever messages change
   useEffect(() => {
@@ -107,7 +131,7 @@ const AIAssistant: React.FC = () => {
       const { data, error } = await supabase.functions.invoke('ai-assistant', {
         body: {
           message: input,
-          language,
+          language: aiLanguage, // Use AI-specific language
           chatHistory: messages.map(m => ({ role: m.role, content: m.content })),
           image: selectedImage ? await convertImageToBase64(selectedImage) : null,
         },
@@ -116,7 +140,7 @@ const AIAssistant: React.FC = () => {
       if (error) throw error;
 
       // If we don't have a proper response, use a fallback
-      let responseText = data?.reply || getFallbackResponse(language);
+      let responseText = data?.reply || getFallbackResponse(aiLanguage);
 
       // Add assistant message to chat
       const assistantMessage: Message = {
@@ -134,7 +158,7 @@ const AIAssistant: React.FC = () => {
       const errorMessage: Message = {
         id: generateUniqueId(),
         role: 'assistant',
-        content: getErrorMessage(language),
+        content: getErrorMessage(aiLanguage),
         timestamp: new Date()
       };
       
@@ -200,6 +224,7 @@ const AIAssistant: React.FC = () => {
            language === 'french' ? 'Assistant IA' : 
            'AI Assistant'}
         </h2>
+
       </div>
 
       <Card className="flex-1 overflow-auto mb-4 p-4 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm shadow-lg">
@@ -290,6 +315,7 @@ const AIAssistant: React.FC = () => {
             'Type your question here...'
           }
           className="flex-1 resize-none bg-white/50 dark:bg-gray-800/50 border-none focus:ring-2 focus:ring-purple-500/20"
+
           rows={2}
           disabled={isLoading}
           onKeyDown={(e) => {

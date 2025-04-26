@@ -120,6 +120,7 @@ const LearningSetupContent: React.FC = () => {
       // Navigate to roadmap page with the selected learning path
       navigate(`/roadmap/generate?path=${pathId}&level=${level}&language=${language}`);
     } catch (error: any) {
+
       console.error('Error saving preferences:', error);
       setError(t('learning.error_saving'));
       toast({
