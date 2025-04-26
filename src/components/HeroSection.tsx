@@ -1,5 +1,5 @@
-
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -7,7 +7,13 @@ import { Mic, GraduationCap, Users, Sparkles } from 'lucide-react';
 
 const HeroSection: React.FC = () => {
   const { t, language } = useLanguage();
+  const navigate = useNavigate();
   const isRtl = language === 'ar' || language === 'darija';
+  
+  const handleStartLearning = () => {
+    console.log('Navigating to learning setup');
+    navigate('/learning-setup');
+  };
   
   return (
     <section className="py-16 text-center">
@@ -34,7 +40,10 @@ const HeroSection: React.FC = () => {
         </div>
         
         <div className="flex flex-col sm:flex-row justify-center gap-4">
-          <Button className="bg-darija-primary hover:bg-red-700 rounded-full px-8 py-2 flex items-center gap-2">
+          <Button 
+            className="bg-darija-primary hover:bg-red-700 rounded-full px-8 py-2 flex items-center gap-2"
+            onClick={handleStartLearning}
+          >
             <GraduationCap className="h-5 w-5" />
             {t('cta.start')}
           </Button>

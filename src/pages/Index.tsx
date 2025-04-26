@@ -1,5 +1,4 @@
-
-import React from 'react';
+import React, { useEffect } from 'react';
 import { LanguageProvider } from '../contexts/LanguageContext';
 import Navbar from '../components/Navbar';
 import HeroSection from '../components/HeroSection';

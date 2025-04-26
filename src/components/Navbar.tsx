@@ -1,141 +1,128 @@
-
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { supabase } from '../integrations/supabase/client';
 import { useLanguage } from '../contexts/LanguageContext';
-import { Bell, ChevronDown, LogOut } from 'lucide-react';
 import { Button } from './ui/button';
-import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
-import { 
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from './ui/dropdown-menu';
+import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
+import { Sheet, SheetContent, SheetTrigger } from "./ui/sheet";
+import { Menu, BookOpen, LogOut, Settings, User, HelpCircle, BarChart } from 'lucide-react';
+import { ModeToggle } from './ui/mode-toggle';
+import { GraduationCap } from 'lucide-react';
 
 const Navbar: React.FC = () => {
-  const { t, language, setLanguage } = useLanguage();
+  const { t, setLanguage, language } = useLanguage();
   const navigate = useNavigate();
-  const [user, setUser] = useState(null);
-  
+  const [user, setUser] = useState<any>(null);
+  const [profile, setProfile] = useState<any>(null);
+  const [isOpen, setIsOpen] = useState(false);
+
   useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
+    const fetchUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
       setUser(user);
+      if (user) {
+        fetchProfile(user.id);
+      }
+    };
+    fetchUser();
+
+    const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+      setUser(session?.user ?? null);
+      if (session?.user) {
+        fetchProfile(session.user.id);
+      } else {
+        setProfile(null);
+      }
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
-      setUser(session?.user || null);
-    });
-
-    return () => subscription.unsubscribe();
+    return () => {
+      authListener?.subscription?.unsubscribe();
+    };
   }, []);
 
-  const handleLogout = async () => {
+  const fetchProfile = async (userId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('username, avatar_url, full_name')
+        .eq('id', userId)
+        .single();
+      if (error) throw error;
+      setProfile(data);
+    } catch (error) {
+      console.error('Error fetching profile:', error);
+    }
+  };
+
+  const handleSignOut = async () => {
     await supabase.auth.signOut();
-    navigate('/auth');
+    navigate('/');
+    setIsOpen(false);
+  };
+
+  const getInitials = (name: string | null): string => {
+    if (!name) return '?';
+    return name.split(' ').map(n => n[0]).join('').toUpperCase();
   };
 
   return (
-    <header className="w-full border-b bg-white shadow-sm">
-      <div className="container mx-auto flex h-16 items-center justify-between px-4">
-        <div className="flex items-center gap-2">
-          <img 
-            src="/lovable-uploads/c1a690d0-2bbc-48da-acef-49803b92983e.png" 
-            alt="DarijaCode Hub Logo" 
-            className="h-8 w-8"
-          />
-          <span className="text-xl font-semibold">{t('app.title')}</span>
-        </div>
-        
-        <nav className="hidden md:flex">
-          <ul className="flex space-x-6">
-            <li>
-              <a href="#" className="text-gray-800 hover:text-darija-primary transition duration-200">
-                {t('nav.home')}
-              </a>
-            </li>
-            <li>
-              <a href="#" className="text-gray-800 hover:text-darija-primary transition duration-200">
-                {t('nav.learn')}
-              </a>
-            </li>
-            <li>
-              <a href="#" className="text-gray-800 hover:text-darija-primary transition duration-200">
-                {t('nav.community')}
-              </a>
-            </li>
-            <li>
-              <a href="#" className="text-gray-800 hover:text-darija-primary transition duration-200">
-                {t('nav.assistant')}
-              </a>
-            </li>
-            <li>
-              <a href="#" className="text-gray-800 hover:text-darija-primary transition duration-200">
-                {t('nav.projects')}
-              </a>
-            </li>
-          </ul>
-        </nav>
-        
-        <div className="flex items-center space-x-4">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="flex items-center gap-1 border rounded-lg">
-                {language === 'ar' || language === 'darija' ? 'العربية' : language === 'fr' ? 'Français' : 'English'}
-                <ChevronDown className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent>
-              <DropdownMenuItem onClick={() => setLanguage('en')}>
-                English
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setLanguage('ar')}>
-                العربية
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setLanguage('fr')}>
-                Français
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setLanguage('darija')}>
-                الدارجة
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-          
-          {user ? (
-            <>
-              <Button variant="ghost" size="icon" className="relative">
-                <Bell className="h-5 w-5" />
-                <span className="absolute top-0 right-0 h-2 w-2 rounded-full bg-darija-primary"></span>
-              </Button>
-              
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <div className="relative cursor-pointer">
-                    <img 
-                      src="https://randomuser.me/api/portraits/men/32.jpg" 
-                      alt="User Profile" 
-                      className="h-8 w-8 rounded-full border-2 border-white shadow-sm"
-                    />
-                  </div>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={() => navigate('/profile')}>
-                    Profile
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={handleLogout}>
-                    <LogOut className="mr-2 h-4 w-4" />
-                    Logout
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </>
-          ) : (
-            <Button onClick={() => navigate('/auth')}>
-              Sign In
+    <nav className="bg-white dark:bg-gray-900 shadow-sm border-b border-gray-200 dark:border-gray-700 sticky top-0 z-50">
+      <div className="container mx-auto px-4 md:px-8">
+        <div className="flex justify-between items-center h-16">
+          <Link to="/" className="flex items-center gap-2 text-xl font-bold text-gray-800 dark:text-white">
+            <GraduationCap className="h-6 w-6 text-darija-primary" />
+            <span>Study Dashboard</span> 
+          </Link>
+
+          <div className="hidden md:flex items-center space-x-4">
+            <Button variant="ghost" size="sm" className="flex items-center gap-1">
+              <BookOpen className="h-4 w-4" />
+              Manage Study Plans
             </Button>
-          )}
+            
+             <ModeToggle /> 
+             <HelpCircle className="h-5 w-5 text-gray-500 cursor-pointer hover:text-gray-700" /> 
+             <Settings className="h-5 w-5 text-gray-500 cursor-pointer hover:text-gray-700" /> 
+            
+            {user ? (
+              <div className="flex items-center space-x-3">
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                   {profile?.full_name || profile?.username || user.email}
+                 </span>
+                <Button onClick={handleSignOut} variant="outline" size="sm">Sign Out</Button>
+              </div>
+            ) : (
+              <div className="flex items-center space-x-2">
+                <Button onClick={() => navigate('/auth')} variant="ghost" size="sm">Sign In</Button>
+              </div>
+            )}
+          </div>
+
+          <div className="md:hidden">
+            <Sheet open={isOpen} onOpenChange={setIsOpen}>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="icon">
+                  <Menu className="h-6 w-6" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="right" className="w-[250px] sm:w-[300px]">
+                 <div className="flex flex-col space-y-4 p-4">
+                   <Link to="/" onClick={() => setIsOpen(false)} className="font-medium hover:text-darija-primary">Dashboard</Link>
+                   <Link to="/manage-plans" onClick={() => setIsOpen(false)} className="font-medium hover:text-darija-primary">Manage Plans</Link>
+                   {user && <Link to="/profile" onClick={() => setIsOpen(false)} className="font-medium hover:text-darija-primary">Profile</Link>}
+                   <ModeToggle />
+                   {user ? (
+                     <Button onClick={handleSignOut} variant="destructive" size="sm">Sign Out</Button>
+                   ) : (
+                     <Button onClick={() => { navigate('/auth'); setIsOpen(false); }} size="sm">Sign In</Button>
+                   )}
+                 </div>
+              </SheetContent>
+            </Sheet>
+          </div>
         </div>
       </div>
-    </header>
+    </nav>
   );
 };
 

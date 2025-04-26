@@ -9,6 +9,196 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      learning_paths: {
+        Row: {
+          id: string
+          name: string
+          description: string | null
+          icon: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          description?: string | null
+          icon?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          description?: string | null
+          icon?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      roadmaps: {
+        Row: {
+          id: string
+          path_id: string
+          title: string
+          description: string | null
+          level: string
+          language: string
+          ai_generated: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          path_id: string
+          title: string
+          description?: string | null
+          level: string
+          language: string
+          ai_generated?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          path_id?: string
+          title?: string
+          description?: string | null
+          level?: string
+          language?: string
+          ai_generated?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "roadmaps_path_id_fkey"
+            columns: ["path_id"]
+            referencedRelation: "learning_paths"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      roadmap_steps: {
+        Row: {
+          id: string
+          roadmap_id: string
+          title: string
+          description: string | null
+          order_index: number
+          estimated_time: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          roadmap_id: string
+          title: string
+          description?: string | null
+          order_index: number
+          estimated_time?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          roadmap_id?: string
+          title?: string
+          description?: string | null
+          order_index?: number
+          estimated_time?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "roadmap_steps_roadmap_id_fkey"
+            columns: ["roadmap_id"]
+            referencedRelation: "roadmaps"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      user_progress: {
+        Row: {
+          id: string
+          user_id: string
+          step_id: string
+          status: string
+          notes: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          step_id: string
+          status?: string
+          notes?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          step_id?: string
+          status?: string
+          notes?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_progress_step_id_fkey"
+            columns: ["step_id"]
+            referencedRelation: "roadmap_steps"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_progress_user_id_fkey"
+            columns: ["user_id"]
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      user_preferences: {
+        Row: {
+          id: string
+          user_id: string
+          preferred_language: string | null
+          preferred_level: string | null
+          learning_goal: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          preferred_language?: string | null
+          preferred_level?: string | null
+          learning_goal?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          preferred_language?: string | null
+          preferred_level?: string | null
+          learning_goal?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_preferences_user_id_fkey"
+            columns: ["user_id"]
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
