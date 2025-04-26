@@ -54,7 +54,6 @@ npm start
 | [ibtissam benabid]    | Cybersecurity Engineer | [LinkedIn](#https://www.linkedin.com/in/ibtissam-benabid/) / [GitHub](#https://github.com/BenabidIbtissam) |
 | [iyas grid]          | Software Engineer | [LinkedIn](#https://www.linkedin.com/in/ilyas-grid/) / [GitHub](#https://github.com/IlyasGrid) |
 
-> *(Update the names and links to your real team members!)*
 
 ---
 
@@ -74,14 +73,3 @@ We welcome contributions to tutorials, features, or even corrections!
 
 ---
 
-## 📧 Contact
-
-For questions, suggestions, or collaborations:
-
-- Email: [your-email@example.com]
-- Instagram: [@your-instagram-handle]
-- LinkedIn: [your-linkedin-profile]
-
----
-
-Proudly made with ❤️ for Morocco 🇲🇦.
