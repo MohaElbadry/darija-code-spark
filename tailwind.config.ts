@@ -69,7 +69,12 @@ export default {
 					tertiary: '#f59e0b',
 					light: '#f8fafc',
 					dark: '#1e293b'
-				}
+				},
+				'morocco-blue': '#1A6B9F',
+				'morocco-terracotta': '#C35831',
+				'morocco-mint': '#65B891',
+				'morocco-gold': '#D4AF37',
+				'morocco-beige': '#F5F0E1'
 			},
 			borderRadius: {
 				lg: 'var(--radius)',
