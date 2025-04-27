@@ -365,7 +365,7 @@ const Projects = () => {
               <button
                 onClick={generateProjectIdea}
                 disabled={isGenerating}
-                className="px-6 py-2 bg-blue-200 dark:bg-blue-50/20 text-black rounded-lg flex items-center justify-center"
+                className="px-6 py-2 bg-morocco-blue hover:bg-morocco-blue/90 text-white rounded-lg flex items-center justify-center"
               >
                 {isGenerating ? (
                   <>
