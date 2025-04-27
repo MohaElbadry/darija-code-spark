@@ -1,6 +1,5 @@
-
 import React, { useState, useEffect } from "react";
-import { Check, ArrowRight, Award, Calendar } from "lucide-react";
+import { Check, ArrowRight, Award, Calendar, Globe } from "lucide-react";
 
 interface PathStep {
   id: string;
@@ -20,11 +19,98 @@ interface LearningPath {
   steps: PathStep[];
 }
 
+type Language = "english" | "arabic" | "french" | "darija";
+
 const DEFAULT_PATH_GOAL = "I want to become a full-stack web developer";
+
+const languageOptions = [
+  { value: "english", label: "English" },
+  { value: "arabic", label: "العربية" },
+  { value: "french", label: "Français" },
+  { value: "darija", label: "الدارجة المغربية" },
+];
+
+const languagePrompts = {
+  english: "Create a detailed coding learning path for me to",
+  arabic: "قم بإنشاء مسار تعليمي مفصل للبرمجة لمساعدتي على",
+  french: "Créez un parcours d'apprentissage détaillé de codage pour m'aider à",
+  darija: "دير ليا واحد المسار ديال التعلم ديال البرمجة باش نقدر"
+};
+
+const interfaceText = {
+  english: {
+    title: "Learning Path Generator",
+    subtitle: "Set your coding goal and get a personalized AI-generated learning path to achieve it.",
+    goalLabel: "What do you want to learn?",
+    generateButton: "Generate Path",
+    generating: "Generating...",
+    progress: "Progress",
+    completed: "Completed",
+    markComplete: "Mark Complete",
+    estimatedTime: "Estimated time:",
+    resources: "Resources:",
+    languageSelector: "Select language:",
+    errorEmpty: "Please enter a learning goal",
+    errorParsing: "Failed to parse the generated learning path. Please try again.",
+    errorGeneral: "An error occurred while generating the learning path. Please check your API key and try again."
+  },
+  arabic: {
+    title: "منشئ مسار التعلم",
+    subtitle: "حدد هدف البرمجة الخاص بك واحصل على مسار تعلم مخصص تم إنشاؤه بواسطة الذكاء الاصطناعي لتحقيقه.",
+    goalLabel: "ماذا تريد أن تتعلم؟",
+    generateButton: "إنشاء المسار",
+    generating: "جاري الإنشاء...",
+    progress: "التقدم",
+    completed: "مكتمل",
+    markComplete: "وضع علامة اكتمال",
+    estimatedTime: "الوقت المقدر:",
+    resources: "الموارد:",
+    languageSelector: "اختر اللغة:",
+    errorEmpty: "الرجاء إدخال هدف التعلم",
+    errorParsing: "فشل في تحليل مسار التعلم المنشأ. يرجى المحاولة مرة أخرى.",
+    errorGeneral: "حدث خطأ أثناء إنشاء مسار التعلم. يرجى التحقق من مفتاح API الخاص بك والمحاولة مرة أخرى."
+  },
+  french: {
+    title: "Générateur de Parcours d'Apprentissage",
+    subtitle: "Définissez votre objectif de codage et obtenez un parcours d'apprentissage personnalisé généré par IA pour l'atteindre.",
+    goalLabel: "Que voulez-vous apprendre ?",
+    generateButton: "Générer le Parcours",
+    generating: "Génération en cours...",
+    progress: "Progrès",
+    completed: "Terminé",
+    markComplete: "Marquer comme Terminé",
+    estimatedTime: "Temps estimé :",
+    resources: "Ressources :",
+    languageSelector: "Sélectionner la langue :",
+    errorEmpty: "Veuillez entrer un objectif d'apprentissage",
+    errorParsing: "Échec de l'analyse du parcours d'apprentissage généré. Veuillez réessayer.",
+    errorGeneral: "Une erreur s'est produite lors de la génération du parcours d'apprentissage. Veuillez vérifier votre clé API et réessayer."
+  },
+  darija: {
+    title: "مولد مسار التعلم",
+    subtitle: "حدد هدف البرمجة ديالك وحصل على مسار تعلم مخصص تم إنشاؤه بالذكاء الاصطناعي باش توصل ليه.",
+    goalLabel: "شنو بغيتي تعلم؟",
+    generateButton: "صاوب المسار",
+    generating: "كنصاوب...",
+    progress: "التقدم",
+    completed: "مكمل",
+    markComplete: "علم بلي كملتي",
+    estimatedTime: "الوقت المقدر:",
+    resources: "الموارد:",
+    languageSelector: "ختار اللغة:",
+    errorEmpty: "دخل هدف التعلم ديالك عافاك",
+    errorParsing: "ماقدرناش نحللو مسار التعلم. عاود جرب.",
+    errorGeneral: "وقع مشكل فإنشاء مسار التعلم. تحقق من مفتاح API ديالك وعاود جرب."
+  }
+};
 
 const LearningPath = () => {
   const [pathGoal, setPathGoal] = useState(() => {
     return localStorage.getItem("pathGoal") || DEFAULT_PATH_GOAL;
+  });
+  
+  const [language, setLanguage] = useState<Language>(() => {
+    return (localStorage.getItem("language") as Language) || "english";
   });
   
   const [isGenerating, setIsGenerating] = useState(false);
@@ -34,6 +120,12 @@ const LearningPath = () => {
     const savedPath = localStorage.getItem("learningPath");
     return savedPath ? JSON.parse(savedPath) : null;
   });
+  
+  const text = interfaceText[language];
+  
+  useEffect(() => {
+    localStorage.setItem("language", language);
+  }, [language]);
   
   const updatePathInLocalStorage = (path: LearningPath) => {
     localStorage.setItem("learningPath", JSON.stringify(path));
@@ -65,7 +157,7 @@ const LearningPath = () => {
   
   const generateLearningPath = async () => {
     if (pathGoal.trim() === "") {
-      setGenerationError("Please enter a learning goal");
+      setGenerationError(text.errorEmpty);
       return;
     }
     
@@ -73,6 +165,8 @@ const LearningPath = () => {
     setGenerationError(null);
     
     try {
+      const prompt = `${languagePrompts[language]} ${pathGoal}, using Moroccan references if possible. Return it as a JSON object only, with no explanation. Make sure it's a valid JSON that can be parsed. The response should be in ${language}.`;
+      
       const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
         method: "POST",
         headers: {
@@ -84,11 +178,11 @@ const LearningPath = () => {
           messages: [
             {
               role: "system",
-              content: "You are DarijaCode Hub's learning path assistant, helping Moroccan developers create structured learning plans. When responding, format your output as valid JSON that can be parsed. The response should include a learning path with steps that have the following structure: {id, title, description, level, category, steps: [{id, title, description, resources: [{title, url}], estimatedTime, completed: false}]}."
+              content: `You are DarijaCode Hub's learning path assistant, helping Moroccan developers create structured learning plans. When responding, format your output as valid JSON that can be parsed. The response should include a learning path with steps that have the following structure: {id, title, description, level, category, steps: [{id, title, description, resources: [{title, url}], estimatedTime, completed: false}]}. Respond in ${language}.`
             },
             {
               role: "user",
-              content: `Create a detailed coding learning path for me to ${pathGoal}, using Moroccan references if possible. Return it as a JSON object only, with no explanation. Make sure it's a valid JSON that can be parsed.`
+              content: prompt
             }
           ],
           max_tokens: 2048,
@@ -134,29 +228,54 @@ const LearningPath = () => {
         localStorage.setItem("pathGoal", pathGoal);
       } catch (parseError) {
         console.error("Error parsing learning path JSON:", parseError);
-        setGenerationError("Failed to parse the generated learning path. Please try again.");
+        setGenerationError(text.errorParsing);
       }
     } catch (error) {
       console.error("Error generating learning path:", error);
-      setGenerationError("An error occurred while generating the learning path. Please check your API key and try again.");
+      setGenerationError(text.errorGeneral);
     } finally {
       setIsGenerating(false);
     }
   };
   
+  const handleLanguageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setLanguage(e.target.value as Language);
+  };
+  
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
       <h1 className="text-3xl font-bold mb-6 text-center text-gray-900 dark:text-white">
-        Learning Path Generator
+        {text.title}
       </h1>
       
       <p className="text-center text-gray-600 dark:text-gray-300 mb-8 max-w-3xl mx-auto">
-        Set your coding goal and get a personalized AI-generated learning path to achieve it.
+        {text.subtitle}
       </p>
       
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 mb-6">
+        <div className="flex justify-end mb-4">
+          <div className="flex items-center">
+            <Globe size={16} className="mr-2 text-gray-500 dark:text-gray-400" />
+            <label htmlFor="language-selector" className="text-sm text-gray-500 dark:text-gray-400 mr-2">
+              {text.languageSelector}
+            </label>
+            <select
+              id="language-selector"
+              value={language}
+              onChange={handleLanguageChange}
+              className="text-sm border border-gray-300 dark:border-gray-600 rounded-md py-1 px-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+            >
+              {languageOptions.map(option => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+        
         <h2 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">
-          What do you want to learn?
+          {text.goalLabel}
         </h2>
         
         <div className="flex flex-col md:flex-row gap-4 mb-6">
@@ -164,8 +283,9 @@ const LearningPath = () => {
             type="text"
             value={pathGoal}
             onChange={(e) => setPathGoal(e.target.value)}
-            placeholder="E.g., I want to become a full-stack web developer"
+            placeholder={DEFAULT_PATH_GOAL}
             className="flex-grow px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-morocco-blue focus:border-morocco-blue bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+            dir={language === "arabic" || language === "darija" ? "rtl" : "ltr"}
           />
           
           <button
@@ -176,10 +296,10 @@ const LearningPath = () => {
             {isGenerating ? (
               <>
                 <div className="mr-2 w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                Generating...
+                {text.generating}
               </>
             ) : (
-              "Generate Path"
+              text.generateButton
             )}
           </button>
         </div>
@@ -191,7 +311,7 @@ const LearningPath = () => {
         )}
         
         {learningPath && (
-          <div className="mt-8">
+          <div className="mt-8" dir={language === "arabic" || language === "darija" ? "rtl" : "ltr"}>
             <div className="flex justify-between items-center mb-6">
               <div>
                 <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
@@ -207,7 +327,7 @@ const LearningPath = () => {
                   <Award size={24} className="text-morocco-blue" />
                 </div>
                 <div>
-                  <div className="text-sm text-gray-500 dark:text-gray-400">Progress</div>
+                  <div className="text-sm text-gray-500 dark:text-gray-400">{text.progress}</div>
                   <div className="text-lg font-semibold text-morocco-blue dark:text-morocco-mint">
                     {calculateProgress()}%
                   </div>
@@ -271,20 +391,20 @@ const LearningPath = () => {
                           : "bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"
                       }`}
                     >
-                      {step.completed ? "Completed" : "Mark Complete"}
+                      {step.completed ? text.completed : text.markComplete}
                     </button>
                   </div>
                   
                   {step.estimatedTime && (
                     <div className="flex items-center mt-4 text-sm text-gray-500 dark:text-gray-400">
                       <Calendar size={14} className="mr-1" />
-                      Estimated time: {step.estimatedTime}
+                      {text.estimatedTime} {step.estimatedTime}
                     </div>
                   )}
                   
                   {step.resources && step.resources.length > 0 && (
                     <div className="mt-4">
-                      <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-2">Resources:</h4>
+                      <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-2">{text.resources}</h4>
                       <ul className="space-y-1 text-sm">
                         {step.resources.map((resource, idx) => (
                           <li key={idx}>
@@ -294,7 +414,8 @@ const LearningPath = () => {
                               rel="noopener noreferrer"
                               className="text-morocco-blue dark:text-morocco-mint hover:underline flex items-center"
                             >
-                              {resource.title} <ArrowRight size={12} className="ml-1" />
+                              {resource.title} 
+                              <ArrowRight size={12} className={language === "arabic" || language === "darija" ? "mr-1 rotate-180" : "ml-1"} />
                             </a>
                           </li>
                         ))}
